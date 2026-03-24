@@ -31,23 +31,25 @@ export const CardGroup: React.FC<CardGroupProps> = ({ cards, isCurrentPlayer }) 
   sequences.push(currentSeq);
 
   // We want to achieve a roughly 2.5 : 3.5 aspect ratio for playing cards
-  // 10 units wide : 14 units tall = 2.5 : 3.5 = 1 : 1.4
+  // 40px wide : 56px tall = 2.5 : 3.5
+  // 48px wide : 68px tall
+  // 64px wide : 90px tall
 
   return (
-    <div className="flex flex-wrap gap-2 md:gap-4 mt-2">
+    <div className="flex flex-wrap gap-x-4 gap-y-3 mt-2">
       {sequences.map((seq, seqIdx) => (
         <div key={seqIdx} className="relative flex">
           {seq.map((c, i) => (
             <div
               key={c.value}
               className={`
-                relative flex items-center justify-center 
-                w-12 h-[68px] md:w-16 md:h-[90px]
-                rounded-md bg-white border border-slate-300
-                shadow-[0_2px_4px_rgba(0,0,0,0.1)]
+                relative flex flex-col items-center justify-center 
+                w-[40px] h-[56px] md:w-[50px] md:h-[70px]
+                rounded-[4px] bg-white border border-slate-300
+                shadow-sm
                 overflow-hidden
-                ${i > 0 ? '-ml-8 md:-ml-10' : 'z-10'}
-                ${isCurrentPlayer && i === 0 ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
+                ${i > 0 ? '-ml-5 md:-ml-7' : 'z-10'}
+                ${isCurrentPlayer && i === 0 ? 'ring-2 ring-[#1A237E] ring-offset-1' : ''}
               `}
               style={{
                 zIndex: seq.length - i, // Lowest card on top
@@ -56,25 +58,15 @@ export const CardGroup: React.FC<CardGroupProps> = ({ cards, isCurrentPlayer }) 
               }}
               title={`Sequence: ${seq.map(sc => sc.value).join(', ')}`}
             >
-              {/* Top Left Mini Number */}
-              <div className={`absolute top-0.5 left-1 text-[8px] md:text-[10px] font-bold ${i === 0 ? 'text-[#8E0000]' : 'text-slate-300'}`}>
-                 {c.value}
-              </div>
-              
               {/* Center Number */}
-              <span className={`font-black text-xl md:text-2xl ${i === 0 ? 'text-[#8E0000]' : 'text-slate-300'}`}>
+              <span className={`font-black text-lg md:text-xl ${i === 0 ? 'text-[#8E0000]' : 'text-slate-300'}`}>
                 {c.value}
               </span>
-
-              {/* Bottom Right Mini Number (Inverted) */}
-              <div className={`absolute bottom-0.5 right-1 text-[8px] md:text-[10px] font-bold rotate-180 ${i === 0 ? 'text-[#8E0000]' : 'text-slate-300'}`}>
-                 {c.value}
-              </div>
             </div>
           ))}
-          {/* Sequence badge indicator */}
+          {/* Sequence badge indicator (only shown if a sequence exists) */}
           {seq.length > 1 && (
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] md:text-[11px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap shadow-sm z-20 pointer-events-none">
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[8px] md:text-[10px] px-1.5 py-[1px] rounded-full font-bold whitespace-nowrap shadow-sm z-20 pointer-events-none">
               {seq[0].value}-{seq[seq.length - 1].value}
             </div>
           )}

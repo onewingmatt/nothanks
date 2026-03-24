@@ -22,32 +22,32 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const canPass = localPlayer && localPlayer.chips > 0;
 
   return (
-    <div className="flex flex-col h-screen bg-slate-100 font-sans text-slate-800 overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#f3f3f3] font-sans text-slate-800 overflow-hidden">
       
       {/* Header & Controls */}
-      <header className="flex-none p-4 md:p-6 flex justify-between items-center bg-slate-800 text-white shadow-md z-10">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-          No <span className="text-red-500">Thanks!</span>
+      <header className="flex-none p-3 md:p-4 flex justify-between items-center bg-[#2f3131] text-white shadow-md z-10 border-b-2 border-[#1a1c1c]">
+        <h1 className="text-xl md:text-2xl font-black tracking-tighter">
+          NO <span className="text-[#ffb4a8]">THANKS!</span>
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-6">
           <div className="flex flex-col items-end">
-             <span className="text-sm text-slate-300">Cards Remaining</span>
-             <span className="text-xl font-bold">{gameState.deck.length}</span>
+             <span className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider">Remaining</span>
+             <span className="text-lg md:text-xl font-bold leading-tight">{gameState.deck.length}</span>
           </div>
           <button 
             onClick={onToggleHideChips}
-            className="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-slate-600"
+            className="bg-[#1a1c1c] hover:bg-black px-3 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors border border-slate-700 text-slate-300"
           >
-            {hideChips ? 'Show Opponent Chips' : 'Hide Opponent Chips'}
+            {hideChips ? 'Show Chips' : 'Hide Chips'}
           </button>
         </div>
       </header>
 
       {/* Main Game Area */}
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
-        {/* Opponents (Left/Top) */}
-        <section className="flex-none md:w-80 flex flex-row md:flex-col gap-4 p-4 overflow-x-auto md:overflow-y-auto bg-slate-50 shadow-inner">
+        {/* Opponents (Left Panel Desktop / Top Row Mobile) */}
+        <section className="flex-none w-full md:w-[320px] flex flex-row md:flex-col gap-3 p-3 md:p-4 overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200">
            {gameState.players.filter(p => p.id !== localPlayerId).map((player) => (
              <PlayerTableau 
                key={player.id} 
@@ -60,38 +60,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </section>
 
         {/* Center Board (Middle) */}
-        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative border-t md:border-t-0 md:border-l border-slate-200 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-slate-100">
+        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-[radial-gradient(circle_at_center,_#ffffff,_#e2e2e2)] relative">
           
-          <div className="mb-6 text-center">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-600 mb-2">
-              {gameState.status === 'finished' ? 'Game Over!' : 'Current Card'}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwdjhoOHYtOEgweiIgZmlsbD0ibm9uZSI+PC9wYXRoPgo8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMSIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjA1Ij48L2NpcmNsZT4KPC9zdmc+')] opacity-50 pointer-events-none"></div>
+
+          <div className="mb-6 md:mb-10 text-center z-10">
+            <h2 className="text-sm md:text-base font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+              {gameState.status === 'finished' ? 'Game Over' : 'Current Card'}
             </h2>
           </div>
 
-          <div className="relative group perspective-1000 w-48 h-[268px] md:w-64 md:h-[358px]">
+          <div className="relative group perspective-1000 w-[160px] h-[224px] md:w-[220px] md:h-[308px] z-10">
             <div className={`
-              absolute inset-0 bg-white rounded-[24px] shadow-[0_12px_24px_rgba(0,0,0,0.12)] border border-slate-200
-              flex flex-col items-center justify-center transition-transform duration-500 transform-gpu overflow-hidden
+              absolute inset-0 bg-[#f9f9f9] rounded-[16px] md:rounded-[24px] shadow-[0_16px_32px_-12px_rgba(0,0,0,0.3)] border border-white
+              flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
               ${gameState.currentCard ? 'scale-100 rotate-y-0' : 'scale-95 rotate-y-180 opacity-0'}
             `}
             style={{
-              // Subtle linen/noise texture for the main card background
               backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.03%22/%3E%3C/svg%3E")',
             }}
             >
                {gameState.currentCard && (
                  <>
-                   {/* Center Number with gradient */}
-                   <span className="text-[100px] md:text-[140px] font-black leading-none bg-gradient-to-b from-[#8E0000] to-[#5C0000] bg-clip-text text-transparent drop-shadow-sm">
+                   {/* Center Number with subtle gradient */}
+                   <span className="text-[80px] md:text-[120px] font-black leading-none text-[#400000] tracking-tighter mix-blend-multiply opacity-90">
                      {gameState.currentCard.value}
                    </span>
                    {/* Top Left Mini Number */}
-                   <div className="absolute top-4 left-5 flex flex-col items-center text-[#8E0000]">
-                     <span className="text-3xl font-black">{gameState.currentCard.value}</span>
+                   <div className="absolute top-3 left-4 md:top-4 md:left-5 flex flex-col items-center text-[#400000]">
+                     <span className="text-xl md:text-2xl font-black opacity-80">{gameState.currentCard.value}</span>
                    </div>
                    {/* Bottom Right Mini Number (Inverted) */}
-                   <div className="absolute bottom-4 right-5 flex flex-col items-center text-[#8E0000] rotate-180">
-                     <span className="text-3xl font-black">{gameState.currentCard.value}</span>
+                   <div className="absolute bottom-3 right-4 md:bottom-4 md:right-5 flex flex-col items-center text-[#400000] rotate-180">
+                     <span className="text-xl md:text-2xl font-black opacity-80">{gameState.currentCard.value}</span>
                    </div>
                  </>
                )}
@@ -99,24 +100,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Chips on Card */}
             {gameState.currentCard && gameState.chipsOnCurrentCard > 0 && (
-              <div className="absolute -bottom-8 -right-8 md:-bottom-12 md:-right-12 z-20 pointer-events-none">
+              <div className="absolute -bottom-6 -right-6 md:-bottom-10 md:-right-10 z-20 pointer-events-none">
                 <div className="relative">
                   {Array.from({ length: Math.min(gameState.chipsOnCurrentCard, 20) }).map((_, i) => (
                     <div 
                       key={i}
-                      className="absolute w-12 h-12 md:w-16 md:h-16 bg-[#b52518] rounded-full border-4 border-[#8E0000] shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
+                      className="absolute w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-[#e17c5a] to-[#b52518] rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.3)] border border-[#ffb4a8]/30"
                       style={{
-                        top: `${(i % 5) * -4 + Math.random() * 8}px`,
-                        left: `${(i % 4) * -4 + Math.random() * 8}px`,
+                        top: `${(i % 5) * -3 + Math.random() * 6}px`,
+                        left: `${(i % 4) * -3 + Math.random() * 6}px`,
                         transform: `rotate(${Math.random() * 360}deg)`,
                         zIndex: i
                       }}
                     >
-                       <div className="absolute inset-2 border-2 border-white/20 rounded-full opacity-50" />
+                       <div className="absolute inset-1.5 border border-[#380b00]/20 rounded-full opacity-60" />
                     </div>
                   ))}
-                  <div className="absolute -top-4 -right-4 bg-slate-800 text-white font-bold text-xl md:text-2xl px-3 py-1 md:px-4 md:py-2 rounded-full shadow-lg border-2 border-[#b52518] z-30 flex items-center gap-2">
-                     <span className="w-4 h-4 rounded-full bg-[#b52518] inline-block shadow-inner" />
+                  <div className="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-[#1a1c1c] text-[#f9f9f9] font-black text-lg md:text-xl px-2.5 py-0.5 md:px-3 md:py-1 rounded-full shadow-xl border-2 border-[#1a1c1c] z-30 flex items-center gap-1.5">
+                     <span className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#e17c5a] inline-block shadow-inner" />
                      {gameState.chipsOnCurrentCard}
                   </div>
                 </div>
@@ -126,37 +127,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Local Player Turn Controls */}
           <div className={`
-            mt-12 md:mt-20 flex gap-4 md:gap-8 transition-all duration-300
+            mt-12 md:mt-20 flex gap-4 md:gap-6 transition-all duration-300 z-10
             ${isLocalTurn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}
           `}>
             <button
               onClick={() => onAction('pass')}
               disabled={!canPass || !isLocalTurn}
               className={`
-                px-8 py-4 md:px-12 md:py-6 rounded-full font-extrabold text-xl md:text-2xl text-white shadow-[0_8px_16px_rgba(0,0,0,0.15)]
-                transition-all duration-200 flex flex-col items-center justify-center min-w-[160px] md:min-w-[200px] border-none
+                px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl shadow-lg border-2
+                transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px]
                 ${canPass 
-                  ? 'bg-[#8E0000] hover:bg-[#680000] hover:-translate-y-1 hover:shadow-2xl active:translate-y-1 active:shadow-md' 
-                  : 'bg-slate-300 text-slate-500 cursor-not-allowed'}
+                  ? 'bg-white text-[#400000] border-[#400000] hover:bg-[#fff5f5] hover:-translate-y-1 hover:shadow-xl active:translate-y-0' 
+                  : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}
               `}
             >
-              <span className="tracking-wide">NO THANKS</span>
-              <span className={`text-xs md:text-sm font-medium mt-1 ${canPass ? 'text-white/80' : 'text-slate-400'}`}>
-                Pay 1 Chip
+              <span className="tracking-[0.1em]">PASS</span>
+              <span className={`text-[10px] md:text-xs font-bold mt-0.5 ${canPass ? 'text-[#8E0000]/70' : 'text-slate-400'}`}>
+                PAY 1 CHIP
               </span>
             </button>
             <button
               onClick={() => onAction('take')}
               disabled={!isLocalTurn}
               className="
-                px-8 py-4 md:px-12 md:py-6 rounded-full font-extrabold text-xl md:text-2xl bg-[#1A237E] text-white shadow-[0_8px_16px_rgba(0,0,0,0.15)]
-                hover:bg-[#000767] hover:-translate-y-1 hover:shadow-2xl active:translate-y-1 active:shadow-md border-none
-                transition-all duration-200 flex flex-col items-center justify-center min-w-[160px] md:min-w-[200px]
+                px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#400000] text-white shadow-lg border-2 border-[#400000]
+                hover:bg-[#680000] hover:-translate-y-1 hover:shadow-xl active:translate-y-0
+                transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px]
               "
             >
-              <span className="tracking-wide">TAKE IT</span>
-              <span className="text-xs md:text-sm font-medium mt-1 text-white/80">
-                +{gameState.chipsOnCurrentCard} Chips
+              <span className="tracking-[0.1em]">TAKE IT</span>
+              <span className="text-[10px] md:text-xs font-bold mt-0.5 text-[#ffb4a8]">
+                +{gameState.chipsOnCurrentCard} CHIPS
               </span>
             </button>
           </div>
@@ -166,14 +167,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </main>
 
       {/* Local Player (Bottom) */}
-      <footer className="flex-none p-4 md:p-6 bg-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+      <footer className="flex-none p-3 md:p-5 bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 relative">
          {localPlayer && (
-            <PlayerTableau 
-              player={localPlayer} 
-              isCurrentTurn={isLocalTurn}
-              hideChips={false}
-              isLocalPlayer={true}
-            />
+            <div className="max-w-4xl mx-auto">
+               <PlayerTableau 
+                 player={localPlayer} 
+                 isCurrentTurn={isLocalTurn}
+                 hideChips={false}
+                 isLocalPlayer={true}
+               />
+            </div>
          )}
       </footer>
 
