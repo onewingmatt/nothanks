@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GameBoard } from './components/GameBoard';
+import { Lobby } from './components/Lobby';
 import type { GameState, BotAction } from './game/models';
 import { createInitialGameState, processAction, calculateScore } from './game/engine';
 import { evaluateBotDecision } from './game/ai';
@@ -8,12 +9,18 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [localPlayerId] = useState<string>('p_1'); // Default to Player 1
   const [hideChips, setHideChips] = useState<boolean>(true);
+  const [roomInfo, setRoomInfo] = useState<{name: string, room: string, bots: number} | null>(null);
 
-  // Initialize Game
-  useEffect(() => {
-    const initial = createInitialGameState(['You'], ['Bot Alpha', 'Bot Beta', 'Bot Gamma']);
+  // Initialize Game when Lobby submits
+  const handleJoinGame = (playerName: string, roomCode: string, numBots: number) => {
+    const botNames = ['Bot Alpha', 'Bot Beta', 'Bot Gamma', 'Bot Delta'].slice(0, numBots);
+    
+    // In the future, this is where we'd connect to WebSockets with `roomCode`
+    // For now, initialize a local game immediately with the configured bots
+    const initial = createInitialGameState([playerName], botNames);
     setGameState(initial);
-  }, []);
+    setRoomInfo({ name: playerName, room: roomCode, bots: numBots });
+  };
 
   // Handle Player/Bot Actions
   const handleAction = useCallback((action: BotAction) => {
@@ -44,7 +51,7 @@ const App: React.FC = () => {
   }, [gameState, handleAction]);
 
   if (!gameState) {
-    return <div className="flex items-center justify-center h-screen bg-slate-900 text-white text-2xl">Loading Game...</div>;
+    return <Lobby onJoinGame={handleJoinGame} />;
   }
 
   return (
@@ -56,6 +63,13 @@ const App: React.FC = () => {
         hideChips={hideChips}
         onToggleHideChips={() => setHideChips(prev => !prev)}
       />
+      
+      {/* Lobby Info Overlay (Top Left corner) */}
+      <div className="absolute top-24 left-4 md:top-6 md:left-6 z-30 pointer-events-none">
+        <div className="bg-slate-800/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-sm shadow-md font-medium tracking-wide">
+          Room: <span className="text-white font-bold">{roomInfo?.room}</span>
+        </div>
+      </div>
       
       {/* Game Over Screen Overlay */}
       {gameState.status === 'finished' && (
@@ -87,12 +101,20 @@ const App: React.FC = () => {
 
             <button 
               onClick={() => {
-                const initial = createInitialGameState(['You'], ['Bot Alpha', 'Bot Beta', 'Bot Gamma']);
-                setGameState(initial);
+                if (roomInfo) {
+                   handleJoinGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                }
               }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-xl transition-colors"
+              className="w-full bg-[#1A237E] hover:bg-[#000767] text-white font-bold py-4 rounded-xl text-xl transition-colors mb-3"
             >
               Play Again
+            </button>
+            
+            <button 
+              onClick={() => setGameState(null)}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl text-lg transition-colors"
+            >
+              Return to Lobby
             </button>
           </div>
         </div>
