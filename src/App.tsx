@@ -62,14 +62,8 @@ const App: React.FC = () => {
         onAction={handleAction} 
         hideChips={hideChips}
         onToggleHideChips={() => setHideChips(prev => !prev)}
+        roomCode={roomInfo?.room}
       />
-      
-      {/* Lobby Info Overlay (Top Left corner) */}
-      <div className="absolute top-24 left-4 md:top-6 md:left-6 z-30 pointer-events-none">
-        <div className="bg-slate-800/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-sm shadow-md font-medium tracking-wide">
-          Room: <span className="text-white font-bold">{roomInfo?.room}</span>
-        </div>
-      </div>
       
       {/* Game Over Screen Overlay */}
       {gameState.status === 'finished' && (
@@ -84,15 +78,15 @@ const App: React.FC = () => {
                 .map((result, index) => (
                   <div key={result.player.id} className={`
                     flex justify-between items-center p-4 rounded-xl border-2
-                    ${index === 0 ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}
+                    ${index === 0 ? 'border-[#8E0000] bg-red-50/50' : 'border-slate-200'}
                   `}>
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{index === 0 ? '🏆' : `${index + 1}.`}</span>
-                      <span className="font-bold text-lg">{result.player.name} {result.player.isBot && '🤖'}</span>
+                      <span className="font-bold text-lg text-slate-800">{result.player.name} {result.player.isBot && '🤖'}</span>
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-black text-slate-800">{result.score} pts</div>
-                      <div className="text-sm text-slate-500">Chips: {result.player.chips}</div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Chips: {result.player.chips}</div>
                     </div>
                   </div>
                 ))
@@ -105,9 +99,9 @@ const App: React.FC = () => {
                    handleJoinGame(roomInfo.name, roomInfo.room, roomInfo.bots);
                 }
               }}
-              className="w-full bg-[#1A237E] hover:bg-[#000767] text-white font-bold py-4 rounded-xl text-xl transition-colors mb-3"
+              className="w-full bg-[#400000] hover:bg-[#680000] text-white font-black tracking-wide py-4 rounded-xl text-xl transition-colors mb-3 shadow-lg"
             >
-              Play Again
+              PLAY AGAIN
             </button>
             
             <button 

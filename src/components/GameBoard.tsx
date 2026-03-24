@@ -8,6 +8,7 @@ interface GameBoardProps {
   onAction: (action: BotAction) => void;
   hideChips: boolean;
   onToggleHideChips: () => void;
+  roomCode?: string;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -15,7 +16,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   localPlayerId, 
   onAction,
   hideChips,
-  onToggleHideChips
+  onToggleHideChips,
+  roomCode
 }) => {
   const localPlayer = gameState.players.find(p => p.id === localPlayerId);
   const isLocalTurn = gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
@@ -25,10 +27,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     <div className="flex flex-col h-screen bg-[#f3f3f3] font-sans text-slate-800 overflow-hidden">
       
       {/* Header & Controls */}
-      <header className="flex-none p-3 md:p-4 flex justify-between items-center bg-[#2f3131] text-white shadow-md z-10 border-b-2 border-[#1a1c1c]">
-        <h1 className="text-xl md:text-2xl font-black tracking-tighter">
-          NO <span className="text-[#ffb4a8]">THANKS!</span>
-        </h1>
+      <header className="flex-none h-[64px] p-3 md:p-4 flex justify-between items-center bg-[#2f3131] text-white shadow-md z-10 border-b-2 border-[#1a1c1c]">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl md:text-2xl font-black tracking-tighter">
+            NO <span className="text-[#ffb4a8]">THANKS!</span>
+          </h1>
+          {roomCode && (
+            <div className="hidden md:flex bg-black/40 px-2.5 py-1 rounded text-[10px] md:text-xs font-medium text-slate-300 border border-slate-700">
+              ROOM: <span className="text-white ml-1 font-bold">{roomCode}</span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-3 md:gap-6">
           <div className="flex flex-col items-end">
              <span className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider">Remaining</span>
@@ -42,12 +51,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </button>
         </div>
       </header>
+      
+      {/* Mobile Room Code Strip (if it didn't fit in header) */}
+      {roomCode && (
+        <div className="md:hidden flex-none h-[28px] bg-slate-800 text-slate-300 text-[10px] py-1 px-3 text-center border-b border-slate-700">
+          ROOM: <span className="text-white font-bold ml-1">{roomCode}</span>
+        </div>
+      )}
 
       {/* Main Game Area */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* Opponents (Left Panel Desktop / Top Row Mobile) */}
-        <section className="flex-none w-full md:w-[320px] flex flex-row md:flex-col gap-3 p-3 md:p-4 overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200">
+        <section className="flex-none h-[150px] md:h-auto w-full md:w-[320px] flex flex-row md:flex-col gap-3 p-3 md:p-4 overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200">
            {gameState.players.filter(p => p.id !== localPlayerId).map((player) => (
              <PlayerTableau 
                key={player.id} 
@@ -64,7 +80,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwdjhoOHYtOEgweiIgZmlsbD0ibm9uZSI+PC9wYXRoPgo8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMSIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjA1Ij48L2NpcmNsZT4KPC9zdmc+')] opacity-50 pointer-events-none"></div>
 
-          <div className="mb-6 md:mb-10 text-center z-10">
+          <div className="mb-6 md:mb-10 text-center z-10 h-[32px]">
             <h2 className="text-sm md:text-base font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
               {gameState.status === 'finished' ? 'Game Over' : 'Current Card'}
             </h2>
@@ -127,15 +143,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Local Player Turn Controls */}
           <div className={`
-            mt-12 md:mt-20 flex gap-4 md:gap-6 transition-all duration-300 z-10
-            ${isLocalTurn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}
+            mt-12 md:mt-20 flex gap-4 md:gap-6 transition-opacity duration-300 z-10 h-[64px] md:h-[80px]
+            ${isLocalTurn ? 'opacity-100' : 'opacity-0 pointer-events-none'}
           `}>
             <button
               onClick={() => onAction('pass')}
               disabled={!canPass || !isLocalTurn}
               className={`
                 px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl shadow-lg border-2
-                transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px]
+                transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px] h-full
                 ${canPass 
                   ? 'bg-white text-[#400000] border-[#400000] hover:bg-[#fff5f5] hover:-translate-y-1 hover:shadow-xl active:translate-y-0' 
                   : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}
@@ -151,7 +167,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               disabled={!isLocalTurn}
               className="
                 px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#400000] text-white shadow-lg border-2 border-[#400000]
-                hover:bg-[#680000] hover:-translate-y-1 hover:shadow-xl active:translate-y-0
+                hover:bg-[#680000] hover:-translate-y-1 hover:shadow-xl active:translate-y-0 h-full
                 transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px]
               "
             >
@@ -167,9 +183,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </main>
 
       {/* Local Player (Bottom) */}
-      <footer className="flex-none p-3 md:p-5 bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 relative">
+      <footer className="flex-none p-3 md:p-5 bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 relative h-[160px] md:h-[200px] flex items-center justify-center">
          {localPlayer && (
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full max-w-4xl h-full">
                <PlayerTableau 
                  player={localPlayer} 
                  isCurrentTurn={isLocalTurn}
