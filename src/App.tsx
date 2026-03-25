@@ -11,6 +11,15 @@ const App: React.FC = () => {
   const [hideChips, setHideChips] = useState<boolean>(true);
   const [roomInfo, setRoomInfo] = useState<{name: string, room: string, bots: BotArchetypeId[]} | null>(null);
 
+  // Manage Document Title
+  useEffect(() => {
+    if (gameState && roomInfo?.room) {
+      document.title = `No Thanks! [${roomInfo.room}]`;
+    } else {
+      document.title = "No Thanks!";
+    }
+  }, [gameState, roomInfo]);
+
   // Initialize Game when Lobby submits
   const handleJoinGame = (playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
     // Create the room in a "waiting" state
