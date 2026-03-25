@@ -1,6 +1,8 @@
 import React from 'react';
 import type { GameState, BotAction } from '../game/models';
 import { PlayerTableau } from './PlayerTableau';
+import { OpponentStrip } from './OpponentStrip';
+import { getCardColor } from '../utils/colors';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -25,6 +27,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isLocalTurn = gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
   const canPass = localPlayer && localPlayer.chips > 0;
   const isWaiting = gameState.status === 'waiting';
+
+  const currentCardColor = gameState.currentCard ? getCardColor(gameState.currentCard.value) : '#400000';
 
   return (
     <div className="flex flex-col h-screen bg-[#f3f3f3] font-sans text-slate-800 overflow-hidden">
@@ -66,20 +70,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* Opponents (Left Panel Desktop / Top Row Mobile) */}
-        <section className="flex-none h-[150px] md:h-auto w-full md:w-[320px] flex flex-row md:flex-col gap-3 p-3 md:p-4 overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200">
+        {/* We use strict max heights/widths here and simple flex wrap for the strips */}
+        <section className={`
+           flex-none w-full md:w-[320px] 
+           flex flex-row md:flex-col gap-4 p-4 md:p-6 
+           overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200
+           scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent
+           ${isWaiting ? 'hidden' : 'flex opacity-100'}
+        `}>
            {gameState.players.filter(p => p.id !== localPlayerId).map((player) => (
-             <PlayerTableau 
-               key={player.id} 
-               player={player} 
-               isCurrentTurn={!isWaiting && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
-               hideChips={hideChips}
-               isLocalPlayer={false}
-             />
+             <div key={player.id} className="flex-shrink-0 min-w-[240px] md:min-w-0 pr-4 md:pr-0">
+                 <OpponentStrip 
+                   player={player} 
+                   isCurrentTurn={!isWaiting && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
+                   hideChips={hideChips}
+                 />
+             </div>
            ))}
         </section>
 
         {/* Center Board (Middle) */}
-        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-[radial-gradient(circle_at_center,_#ffffff,_#e2e2e2)] relative">
+        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-[radial-gradient(circle_at_center,_#ffffff,_#e2e2e2)] relative overflow-hidden">
           
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwdjhoOHYtOEgweiIgZmlsbD0ibm9uZSI+PC9wYXRoPgo8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMSIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjA1Ij48L2NpcmNsZT4KPC9zdmc+')] opacity-50 pointer-events-none"></div>
 
@@ -111,13 +122,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ) : (
             // ACTIVE GAME UI
             <>
-              <div className="mb-6 md:mb-10 text-center z-10 h-[32px]">
-                <h2 className="text-sm md:text-base font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+              <div className="mb-4 md:mb-8 text-center z-10 h-[24px]">
+                <h2 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
                   {gameState.status === 'finished' ? 'Game Over' : 'Current Card'}
                 </h2>
               </div>
 
-              <div className="relative group perspective-1000 w-[160px] h-[224px] md:w-[220px] md:h-[308px] z-10">
+              {/* CARD CONTAINER - strictly sized */}
+              <div className="relative group perspective-1000 w-[140px] h-[196px] md:w-[200px] md:h-[280px] z-10 flex-shrink-0">
                 <div className={`
                   absolute inset-0 bg-[#f9f9f9] rounded-[16px] md:rounded-[24px] shadow-[0_16px_32px_-12px_rgba(0,0,0,0.3)] border border-white
                   flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
@@ -129,17 +141,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 >
                    {gameState.currentCard && (
                      <>
-                       {/* Center Number with subtle gradient */}
-                       <span className="text-[80px] md:text-[120px] font-black leading-none text-[#400000] tracking-tighter mix-blend-multiply opacity-90">
+                       {/* Center Number with dynamic gradient color */}
+                       <span 
+                          className="text-[70px] md:text-[100px] font-black leading-none tracking-tighter mix-blend-multiply opacity-95 drop-shadow-sm"
+                          style={{ color: currentCardColor }}
+                       >
                          {gameState.currentCard.value}
                        </span>
                        {/* Top Left Mini Number */}
-                       <div className="absolute top-3 left-4 md:top-4 md:left-5 flex flex-col items-center text-[#400000]">
-                         <span className="text-xl md:text-2xl font-black opacity-80">{gameState.currentCard.value}</span>
+                       <div 
+                          className="absolute top-3 left-4 md:top-4 md:left-5 flex flex-col items-center"
+                          style={{ color: currentCardColor }}
+                       >
+                         <span className="text-lg md:text-xl font-black opacity-90 drop-shadow-sm">{gameState.currentCard.value}</span>
                        </div>
                        {/* Bottom Right Mini Number (Inverted) */}
-                       <div className="absolute bottom-3 right-4 md:bottom-4 md:right-5 flex flex-col items-center text-[#400000] rotate-180">
-                         <span className="text-xl md:text-2xl font-black opacity-80">{gameState.currentCard.value}</span>
+                       <div 
+                          className="absolute bottom-3 right-4 md:bottom-4 md:right-5 flex flex-col items-center rotate-180"
+                          style={{ color: currentCardColor }}
+                       >
+                         <span className="text-lg md:text-xl font-black opacity-90 drop-shadow-sm">{gameState.currentCard.value}</span>
                        </div>
                      </>
                    )}
@@ -147,15 +168,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                 {/* Chips on Card */}
                 {gameState.currentCard && gameState.chipsOnCurrentCard > 0 && (
-                  <div className="absolute -bottom-6 -right-6 md:-bottom-10 md:-right-10 z-20 pointer-events-none">
+                  <div className="absolute -bottom-4 -right-4 md:-bottom-8 md:-right-8 z-20 pointer-events-none">
                     <div className="relative">
                       {Array.from({ length: Math.min(gameState.chipsOnCurrentCard, 20) }).map((_, i) => (
                         <div 
                           key={i}
-                          className="absolute w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-[#e17c5a] to-[#b52518] rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.3)] border border-[#ffb4a8]/30"
+                          className="absolute w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-[#e17c5a] to-[#b52518] rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.3)] border border-[#ffb4a8]/30"
                           style={{
-                            top: `${(i % 5) * -3 + Math.random() * 6}px`,
-                            left: `${(i % 4) * -3 + Math.random() * 6}px`,
+                            top: `${(i % 5) * -2 + Math.random() * 4}px`,
+                            left: `${(i % 4) * -2 + Math.random() * 4}px`,
                             transform: `rotate(${Math.random() * 360}deg)`,
                             zIndex: i
                           }}
@@ -163,8 +184,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                            <div className="absolute inset-1.5 border border-[#380b00]/20 rounded-full opacity-60" />
                         </div>
                       ))}
-                      <div className="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-[#1a1c1c] text-[#f9f9f9] font-black text-lg md:text-xl px-2.5 py-0.5 md:px-3 md:py-1 rounded-full shadow-xl border-2 border-[#1a1c1c] z-30 flex items-center gap-1.5">
-                         <span className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#e17c5a] inline-block shadow-inner" />
+                      <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-[#1a1c1c] text-[#f9f9f9] font-black text-sm md:text-lg px-2 py-0.5 md:px-3 md:py-1 rounded-full shadow-xl border-2 border-[#1a1c1c] z-30 flex items-center gap-1.5">
+                         <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#e17c5a] inline-block shadow-inner" />
                          {gameState.chipsOnCurrentCard}
                       </div>
                     </div>
@@ -174,22 +195,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
               {/* Local Player Turn Controls */}
               <div className={`
-                mt-12 md:mt-20 flex gap-4 md:gap-6 transition-opacity duration-300 z-10 h-[64px] md:h-[80px]
+                mt-8 md:mt-12 flex gap-4 md:gap-6 transition-opacity duration-300 z-10 h-[56px] md:h-[64px]
                 ${isLocalTurn ? 'opacity-100' : 'opacity-0 pointer-events-none'}
               `}>
                 <button
                   onClick={() => onAction('pass')}
                   disabled={!canPass || !isLocalTurn}
                   className={`
-                    px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl shadow-lg border-2
-                    transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px] h-full
+                    px-6 py-2 md:px-8 md:py-3 rounded-full font-black text-sm md:text-lg shadow-lg border-2
+                    transition-all duration-200 flex flex-col items-center justify-center min-w-[120px] md:min-w-[160px] h-full
                     ${canPass 
-                      ? 'bg-white text-[#400000] border-[#400000] hover:bg-[#fff5f5] hover:-translate-y-1 hover:shadow-xl active:translate-y-0' 
+                      ? 'bg-white hover:bg-slate-50 hover:-translate-y-1 hover:shadow-xl active:translate-y-0' 
                       : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}
                   `}
+                  style={canPass ? { color: currentCardColor, borderColor: currentCardColor } : {}}
                 >
                   <span className="tracking-[0.1em]">PASS</span>
-                  <span className={`text-[10px] md:text-xs font-bold mt-0.5 ${canPass ? 'text-[#8E0000]/70' : 'text-slate-400'}`}>
+                  <span className={`text-[8px] md:text-[10px] font-bold mt-0.5 ${canPass ? 'opacity-70' : 'text-slate-400'}`}>
                     PAY 1 CHIP
                   </span>
                 </button>
@@ -197,13 +219,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   onClick={() => onAction('take')}
                   disabled={!isLocalTurn}
                   className="
-                    px-6 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#400000] text-white shadow-lg border-2 border-[#400000]
-                    hover:bg-[#680000] hover:-translate-y-1 hover:shadow-xl active:translate-y-0 h-full
-                    transition-all duration-200 flex flex-col items-center justify-center min-w-[140px] md:min-w-[180px]
+                    px-6 py-2 md:px-8 md:py-3 rounded-full font-black text-sm md:text-lg text-white shadow-lg border-2
+                    hover:-translate-y-1 hover:shadow-xl active:translate-y-0 h-full
+                    transition-all duration-200 flex flex-col items-center justify-center min-w-[120px] md:min-w-[160px]
                   "
+                  style={{ backgroundColor: currentCardColor, borderColor: currentCardColor }}
                 >
                   <span className="tracking-[0.1em]">TAKE IT</span>
-                  <span className="text-[10px] md:text-xs font-bold mt-0.5 text-[#ffb4a8]">
+                  <span className="text-[8px] md:text-[10px] font-bold mt-0.5 text-white/80">
                     +{gameState.chipsOnCurrentCard} CHIPS
                   </span>
                 </button>
@@ -215,15 +238,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </main>
 
       {/* Local Player (Bottom) */}
-      <footer className="flex-none p-3 md:p-5 bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 relative h-[160px] md:h-[200px] flex items-center justify-center">
+      <footer className={`flex-none bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 
+                         h-[140px] md:h-[160px] w-full overflow-hidden transition-opacity duration-300 ${isWaiting ? 'opacity-0 pointer-events-none' : 'opacity-100 block'}`}>
          {localPlayer && (
-            <div className="w-full max-w-4xl h-full">
-               <PlayerTableau 
-                 player={localPlayer} 
-                 isCurrentTurn={!isWaiting && isLocalTurn}
-                 hideChips={false}
-                 isLocalPlayer={true}
-               />
+            <div className="w-full h-full max-w-5xl mx-auto px-4 py-3 md:py-4">
+               <div className="flex flex-col h-full border border-slate-300 rounded-xl bg-[#f9f9f9] shadow-sm overflow-hidden">
+                  
+                  {/* Local Header */}
+                  <div className={`flex justify-between items-center px-4 py-2 flex-none h-[40px] border-b border-slate-200 transition-colors duration-500 ${isLocalTurn && !isWaiting ? 'bg-opacity-10' : 'bg-white'}`}
+                       style={isLocalTurn && !isWaiting ? { backgroundColor: `${currentCardColor}15` } : {}}
+                  >
+                    <h3 className="font-bold text-sm md:text-base tracking-tight flex items-center gap-2 text-slate-800">
+                      {isLocalTurn && !isWaiting && (
+                         <span className="w-2 h-2 rounded-full animate-pulse shadow-sm" style={{ backgroundColor: currentCardColor }}></span>
+                      )}
+                      {localPlayer.name} (You)
+                    </h3>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full font-bold text-sm bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-[#b52518] shadow-inner" />
+                      {localPlayer.chips} Chips
+                    </div>
+                  </div>
+
+                  {/* Local Cards - Horizontal strict scrolling */}
+                  <div className="flex-1 relative overflow-hidden bg-white">
+                    <div className="absolute inset-0 overflow-x-auto overflow-y-hidden px-4 flex items-center scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                       {localPlayer.cards.length > 0 ? (
+                         <PlayerTableau player={localPlayer} isCurrentTurn={false} hideChips={false} isLocalPlayer={true} />
+                       ) : (
+                         <div className="w-full text-center text-slate-400 text-sm font-medium italic">
+                           Your cards will appear here
+                         </div>
+                       )}
+                    </div>
+                  </div>
+
+               </div>
             </div>
          )}
       </footer>

@@ -18,12 +18,15 @@ export const PlayerTableau: React.FC<PlayerTableauProps> = ({
   // Always show chips for the local player, optionally hide for others
   const showChips = isLocalPlayer || !hideChips;
 
+  if (isLocalPlayer) {
+     return <CardGroup cards={player.cards} isCurrentPlayer={true} />;
+  }
+
   return (
     <div className={`
       flex flex-col p-3 md:p-4 rounded-xl border-2 transition-colors duration-300
       ${isCurrentTurn ? 'border-[#8E0000] bg-red-50/50 shadow-md ring-1 ring-[#8E0000]' : 'border-slate-200 bg-white/90'}
-      w-[260px] md:w-full md:min-h-[140px] md:max-h-[140px] flex-shrink-0
-      ${isLocalPlayer ? 'w-full h-full max-w-none md:max-h-none' : 'h-[120px]'}
+      w-[260px] md:w-full md:min-h-[140px] md:max-h-[140px] flex-shrink-0 h-[120px]
     `}>
       {/* Header section is fixed height */}
       <div className="flex justify-between items-center mb-2 flex-none h-[28px]">
