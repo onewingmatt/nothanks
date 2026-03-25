@@ -1,11 +1,12 @@
-import type { GameState, Player, Card, BotAction } from './models';
+import type { GameState, Player, Card, BotAction, BotArchetypeId } from './models';
+import { BOT_ARCHETYPES } from './models';
 
 const DECK_SIZE = 33; // Cards 3-35
 const MIN_CARD = 3;
 const CARDS_REMOVED = 9;
 const STARTING_CHIPS = 11;
 
-export function createInitialGameState(playerNames: string[], botNames: string[]): GameState {
+export function createInitialGameState(playerNames: string[], botIds: BotArchetypeId[]): GameState {
   // 1. Create Deck
   let deck: Card[] = [];
   for (let i = 0; i < DECK_SIZE; i++) {
@@ -35,13 +36,16 @@ export function createInitialGameState(playerNames: string[], botNames: string[]
     });
   });
 
-  botNames.forEach((name) => {
-    // Give bots varying skill/risk profiles
-    const skill = 0.2 + (Math.random() * 0.7); // 0.2 to 0.9
-    const riskyness = 0.3 + (Math.random() * 0.6); // 0.3 to 0.9
+  botIds.forEach((botId) => {
+    const archetype = BOT_ARCHETYPES.find(b => b.id === botId);
+    
+    // Default fallback in case of missing bot definition
+    const skill = archetype ? archetype.skill : 0.5;
+    const riskyness = archetype ? archetype.riskyness : 0.5;
+    const name = archetype ? archetype.name : 'Unknown Bot';
     
     players.push({
-      id: `b_${idCounter++}`,
+      id: `b_${idCounter++}_${botId}`,
       name,
       chips: STARTING_CHIPS,
       cards: [],

@@ -25,15 +25,15 @@ export interface GameState {
   currentCard: Card | null;
   chipsOnCurrentCard: number;
   status: 'waiting' | 'playing' | 'finished';
-  // Helper for bots/players to estimate opponents chips without seeing exact numbers
-  // Represented as ranges or buckets: "low" (0-3), "medium" (4-8), "high" (9+)
-  // Or calculated dynamically by the bot based on their "skill"
-}
-
-export interface OpponentEstimate {
-  id: string;
-  cards: Card[];
-  estimatedChips: number; // A fuzzy estimate based on bot skill
 }
 
 export type BotAction = 'pass' | 'take';
+
+export const BOT_ARCHETYPES = [
+  { id: 'rookie', name: 'The Rookie', skill: 0.1, riskyness: 0.2, description: 'Only cares about the face value of the card. Plays it extremely safe.' },
+  { id: 'gambler', name: 'The Gambler', skill: 0.5, riskyness: 0.9, description: 'Loves chips. Will let a great card circle the table hoping for a bigger payout.' },
+  { id: 'grandmaster', name: 'The Grandmaster', skill: 0.9, riskyness: 0.5, description: 'Counts missing cards, accurately estimates opponents\' chips, and plays the long EV game.' },
+  { id: 'chaotic', name: 'The Wildcard', skill: 0.3, riskyness: 0.7, description: 'Unpredictable. Might pass on a great card or take a terrible one if pressured.' },
+];
+
+export type BotArchetypeId = 'rookie' | 'gambler' | 'grandmaster' | 'chaotic';

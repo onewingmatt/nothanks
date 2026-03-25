@@ -241,8 +241,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <footer className={`flex-none bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 
                          h-[140px] md:h-[160px] w-full overflow-hidden transition-opacity duration-300 ${isWaiting ? 'opacity-0 pointer-events-none' : 'opacity-100 block'}`}>
          {localPlayer && (
-            <div className="w-full h-full max-w-5xl mx-auto px-4 py-3 md:py-4">
-               <div className="flex flex-col h-full border border-slate-300 rounded-xl bg-[#f9f9f9] shadow-sm overflow-hidden">
+            <div className="w-full h-full w-full mx-auto px-2 md:px-6 py-3 md:py-4 flex justify-center">
+               <div className="flex flex-col h-full w-full max-w-7xl border border-slate-300 rounded-xl bg-[#f9f9f9] shadow-sm overflow-hidden">
                   
                   {/* Local Header */}
                   <div className={`flex justify-between items-center px-4 py-2 flex-none h-[40px] border-b border-slate-200 transition-colors duration-500 ${isLocalTurn && !isWaiting ? 'bg-opacity-10' : 'bg-white'}`}

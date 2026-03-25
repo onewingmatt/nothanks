@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GameBoard } from './components/GameBoard';
 import { Lobby } from './components/Lobby';
-import type { GameState, BotAction } from './game/models';
+import type { GameState, BotAction, BotArchetypeId } from './game/models';
 import { createInitialGameState, startGame, processAction, calculateScore } from './game/engine';
 import { evaluateBotDecision } from './game/ai';
 
@@ -9,16 +9,14 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [localPlayerId] = useState<string>('p_1'); // Default to Player 1
   const [hideChips, setHideChips] = useState<boolean>(true);
-  const [roomInfo, setRoomInfo] = useState<{name: string, room: string, bots: number} | null>(null);
+  const [roomInfo, setRoomInfo] = useState<{name: string, room: string, bots: BotArchetypeId[]} | null>(null);
 
   // Initialize Game when Lobby submits
-  const handleJoinGame = (playerName: string, roomCode: string, numBots: number) => {
-    const botNames = ['Bot Alpha', 'Bot Beta', 'Bot Gamma', 'Bot Delta'].slice(0, numBots);
-    
+  const handleJoinGame = (playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
     // Create the room in a "waiting" state
-    const initial = createInitialGameState([playerName], botNames);
+    const initial = createInitialGameState([playerName], bots);
     setGameState(initial);
-    setRoomInfo({ name: playerName, room: roomCode, bots: numBots });
+    setRoomInfo({ name: playerName, room: roomCode, bots });
   };
 
   const handleStartGame = useCallback(() => {
