@@ -12,6 +12,13 @@ const CARDS_REMOVED = 9;
 function calculateActualCost(cardValue: number, playerCards: Card[], chipsOnCard: number): number {
   const cardValues = playerCards.map(c => c.value);
   
+  if (cardValues.includes(cardValue - 1) && cardValues.includes(cardValue + 1)) {
+    // If it bridges a gap perfectly, it actually REDUCES our score by the higher number!
+    // Example: Have 19, 21. Score = 40. Add 20 -> Score = 19. Reduction = 21 points.
+    // Plus the chips.
+    return -(cardValue + 1) - chipsOnCard;
+  }
+  
   // If we already have the card exactly one below this, taking it adds 0 points to our score!
   if (cardValues.includes(cardValue - 1)) {
     return -chipsOnCard; // We strictly GAIN points (lose negative points) by taking this + chips
@@ -59,8 +66,6 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   const riskyness = botPlayer.botConfig?.riskyness ?? 0.5;
 
   // BASELINE EVALUATION (What a low-skill bot sees)
-  // Low skill bots ONLY look at the face value of the card vs the chips on it.
-  // They don't look at their own tableau to see if it connects!
   let perceivedCost = cardValue - chipsOnCard;
   
   // SKILL UPGRADE: Look at own hand
@@ -73,12 +78,8 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
       const chanceToLower = getProbabilityCardInDeck(cardValue - 1, gameState);
       const chanceToHigher = getProbabilityCardInDeck(cardValue + 1, gameState);
       
-      // We must not let EV make a card seem completely free unless chips are heavily involved.
-      // Max EV discount is capped at something reasonable (e.g. 5 points).
-      // Even a 100% chance to draw a connecting card shouldn't make a 35 seem like a 0 cost right away.
       const rawDiscount = (chanceToLower + chanceToHigher) * 4; // Max ~8 points discount
       
-      // We only apply this discount if the bot isn't panicking. If chips are low, EV doesn't matter, survival does.
       if (botPlayer.chips > 3) {
           perceivedCost -= rawDiscount;
       }
@@ -87,14 +88,16 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   // --- DECISION PHASE ---
 
   // Scenario A: The card is actually beneficial to take RIGHT NOW (Cost <= 0)
-  // Or it's so incredibly cheap due to EV that we'll just snap it up.
   if (perceivedCost <= 0) {
       
       // If the bot has no risk appetite, take it immediately.
       if (riskyness < 0.4) return 'take';
 
+      // If the card is an absolutely massive benefit (e.g. bridging a gap where cost is -21), NEVER risk passing it.
+      // This fixes the Grandmaster passing a bridge card.
+      if (perceivedCost <= -10) return 'take';
+
       // SKILL + RISK: Will it come back to us if we pass?
-      // A high-risk bot wants to milk the card for more chips, but only if they think they can get away with it.
       let safeToPass = true;
       
       // High skill bots look at opponents to see if they will steal it
@@ -106,26 +109,20 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
             const errorMargin = Math.max(0, Math.round((1 - skill) * 5)); 
             const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
             
-            // If opponent has 0 chips, they WILL take it. Unsafe.
             if (estimatedChips <= 0) safeToPass = false;
 
-            // If opponent also wants it (connects to their hand), they WILL take it. Unsafe.
             const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
             if (oppCost <= 0) safeToPass = false;
         }
       } else {
-        // Low skill, high risk bots (Blind Gambler) just randomly guess if it's safe without looking at opponents.
+        // Low skill, high risk bots just randomly guess if it's safe
         safeToPass = Math.random() > 0.5;
       }
 
       if (!safeToPass) return 'take'; // Someone will steal it, grab it now.
 
-      // It looks safe to pass. Will we risk it to get more chips?
-      // High riskyness means a very high chance to pass a perfectly good card.
       const riskRoll = Math.random();
       
-      // We also don't want to pass if we ourselves are running dangerously low on chips.
-      // Unless we are completely reckless (riskyness > 0.8)
       if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take';
       
       if (riskRoll < riskyness) {
@@ -139,32 +136,21 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   // We want to pass, but when do we give up and take it?
 
   // 1. Chip Pressure: How desperate are we?
-  // If chips are low, the threshold to take a bad card drops.
-  // Low Risk bots panic early (e.g. at 6 chips). High Risk bots wait until 1 or 2 chips.
-  
-  // A risk-averse bot panics when chips < 7. A reckless bot panics when chips < 2.
-  const panicThreshold = Math.round(7 - (riskyness * 5)); 
+  // A risk-averse bot panics when chips < 8. A reckless bot panics when chips < 2.
+  const panicThreshold = Math.round(8 - (riskyness * 6)); 
   
   let chipDesperation = 0;
   if (botPlayer.chips <= panicThreshold) {
      // Desperation multiplier: the lower the chips, the more willing we are to take bad points.
-     // Example: Panic threshold 6. Chips = 5. (6 - 5 + 1) * 4 = 8 desperation points added to threshold.
-     // Chips = 1. (6 - 1 + 1) * 4 = 24 desperation points added. We will basically take anything.
-     chipDesperation = (panicThreshold - botPlayer.chips + 1) * 4; 
+     // Example: Panic threshold 7. Chips = 1. (7 - 1 + 1) * 8 = 56 desperation points added. We will basically take anything up to 35!
+     // We drastically increased the multiplier (from 4 to 8) so low-risk bots actually take 35s when at 1 chip.
+     chipDesperation = (panicThreshold - botPlayer.chips + 1) * 8; 
   } else if (botPlayer.chips >= 8) {
      // If we have plenty of chips, we actively want to pass.
-     chipDesperation = -5; // Negative desperation makes us less likely to take it
+     chipDesperation = -8; // Negative desperation makes us less likely to take it
   }
 
   // 2. Value Threshold: How bad is "too bad" to pass?
-  // We take the card if: (Chips On Card + Our Desperation + Risk Tolerance) >= Perceived Cost
-  
-  // E.g. Perceived Cost is 24. 
-  // Chips on card = 15. Desperation = -5. RiskAdj = 0. Threshold (10) < 24. We pass.
-  // Chips on card = 15. Desperation = 10 (we have 2 chip left). RiskAdj = 0. Threshold (25) > 24. We take it.
-  
-  // High risk bots will literally subtract from their desperation (willing to hold out longer)
-  // Low risk bots add a flat bonus to desperation to just "get it over with"
   const riskAdjustment = (0.5 - riskyness) * 8; // Ranges from +4 (safe, takes earlier) to -4 (risky, holds out)
   
   const takeThreshold = chipsOnCard + chipDesperation + riskAdjustment;
