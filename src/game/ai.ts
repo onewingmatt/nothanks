@@ -14,8 +14,6 @@ function calculateActualCost(cardValue: number, playerCards: Card[], chipsOnCard
   
   if (cardValues.includes(cardValue - 1) && cardValues.includes(cardValue + 1)) {
     // If it bridges a gap perfectly, it actually REDUCES our score by the higher number!
-    // Example: Have 19, 21. Score = 40. Add 20 -> Score = 19. Reduction = 21 points.
-    // Plus the chips.
     return -(cardValue + 1) - chipsOnCard;
   }
   
@@ -53,8 +51,9 @@ function getProbabilityCardInDeck(targetValue: number, gameState: GameState): nu
 
 /**
  * A bot evaluates whether to take the current card or pass.
- * Skill: 0.0 (Blind) to 1.0 (Calculates perfect EV, opponent states, and hidden probabilities).
- * Risk: 0.0 (Extremely safe, takes cards to avoid zero chips, never passes good cards) to 1.0 (Will risk zero chips, will pass perfectly good cards to milk them).
+ * Skill: 0.0 to 1.0 (Calculates own EV and gap-bridging math perfectly).
+ * Awareness: 0.0 to 1.0 (Tracks opponents' chips and predicts opponents' hands perfectly).
+ * Risk: 0.0 to 1.0 (Will risk zero chips, will pass perfectly good cards to milk them).
  */
 export function evaluateBotDecision(gameState: GameState, botPlayer: Player): BotAction {
   if (!gameState.currentCard) return 'pass'; // Should not happen during active turn
@@ -62,10 +61,13 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
 
   const cardValue = gameState.currentCard.value;
   const chipsOnCard = gameState.chipsOnCurrentCard;
+  
+  // Default to 0.5 if not explicitly configured
   const skill = botPlayer.botConfig?.skill ?? 0.5;
+  const awareness = botPlayer.botConfig?.awareness ?? 0.5;
   const riskyness = botPlayer.botConfig?.riskyness ?? 0.5;
 
-  // BASELINE EVALUATION (What a low-skill bot sees)
+  // --- BASELINE SKILL EVALUATION (What they think the card costs THEM) ---
   let perceivedCost = cardValue - chipsOnCard;
   
   // SKILL UPGRADE: Look at own hand
@@ -77,12 +79,8 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   if (skill >= 0.8 && perceivedCost > 0) {
       const chanceToLower = getProbabilityCardInDeck(cardValue - 1, gameState);
       const chanceToHigher = getProbabilityCardInDeck(cardValue + 1, gameState);
-      
       const rawDiscount = (chanceToLower + chanceToHigher) * 4; // Max ~8 points discount
-      
-      if (botPlayer.chips > 3) {
-          perceivedCost -= rawDiscount;
-      }
+      if (botPlayer.chips > 3) perceivedCost -= rawDiscount;
   }
 
   // --- DECISION PHASE ---
@@ -90,44 +88,51 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   // Scenario A: The card is actually beneficial to take RIGHT NOW (Cost <= 0)
   if (perceivedCost <= 0) {
       
-      // If the bot has no risk appetite, take it immediately.
+      // If the bot has no risk appetite, take it immediately to be safe.
       if (riskyness < 0.4) return 'take';
 
       // If the card is an absolutely massive benefit (e.g. bridging a gap where cost is -21), NEVER risk passing it.
-      // This fixes the Grandmaster passing a bridge card.
       if (perceivedCost <= -10) return 'take';
 
-      // SKILL + RISK: Will it come back to us if we pass?
+      // WILL IT COME BACK TO US?
+      // A high-risk bot wants to milk the card for more chips, but only if they think they can get away with it.
       let safeToPass = true;
       
-      // High skill bots look at opponents to see if they will steal it
-      if (skill >= 0.6) {
+      // AWARENESS: Look at opponents to see if they will steal it
+      if (awareness >= 0.4) {
         for (const opp of gameState.players) {
             if (opp.id === botPlayer.id) continue;
             
-            // True chips +/- random error based on inverse skill. Grandmaster (1.0) has 0 error. Greedy Pro (0.6) has +/- 2 error.
-            const errorMargin = Math.max(0, Math.round((1 - skill) * 5)); 
+            // AWARENESS UPGRADE: Track opponent chips
+            // True chips +/- random error based on inverse awareness. Awareness 1.0 has 0 error. Awareness 0.4 has +/- 3 error.
+            const errorMargin = Math.max(0, Math.round((1 - awareness) * 5)); 
             const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
             
             if (estimatedChips <= 0) safeToPass = false;
 
-            const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
-            if (oppCost <= 0) safeToPass = false;
+            // AWARENESS UPGRADE: Track opponent hands
+            // If awareness is high enough, we literally calculate if the opponent *wants* this card.
+            if (awareness >= 0.7) {
+                const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
+                // If it connects for them perfectly, or if it's generally cheap enough for their stack, they will take it.
+                if (oppCost <= 0) safeToPass = false;
+                
+                // If they are desperate for chips (estimated chips <= 2), they might snap up any low value card.
+                if (estimatedChips <= 2 && oppCost < 10) safeToPass = false;
+            }
         }
       } else {
-        // Low skill, high risk bots just randomly guess if it's safe
+        // Low awareness, high risk bots just randomly guess if it's safe because they aren't paying attention.
         safeToPass = Math.random() > 0.5;
       }
 
       if (!safeToPass) return 'take'; // Someone will steal it, grab it now.
 
+      // It looks safe to pass. Will we risk it to get more chips?
       const riskRoll = Math.random();
+      if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take'; // Unless we are crazy risky, don't pass if we're low on chips
       
-      if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take';
-      
-      if (riskRoll < riskyness) {
-          return 'pass'; // Milk it!
-      }
+      if (riskRoll < riskyness) return 'pass'; // Milk it!
       
       return 'take';
   }
@@ -141,19 +146,39 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   
   let chipDesperation = 0;
   if (botPlayer.chips <= panicThreshold) {
-     // Desperation multiplier: the lower the chips, the more willing we are to take bad points.
-     // Example: Panic threshold 7. Chips = 1. (7 - 1 + 1) * 8 = 56 desperation points added. We will basically take anything up to 35!
-     // We drastically increased the multiplier (from 4 to 8) so low-risk bots actually take 35s when at 1 chip.
      chipDesperation = (panicThreshold - botPlayer.chips + 1) * 8; 
   } else if (botPlayer.chips >= 8) {
-     // If we have plenty of chips, we actively want to pass.
-     chipDesperation = -8; // Negative desperation makes us less likely to take it
+     chipDesperation = -8; 
   }
 
   // 2. Value Threshold: How bad is "too bad" to pass?
   const riskAdjustment = (0.5 - riskyness) * 8; // Ranges from +4 (safe, takes earlier) to -4 (risky, holds out)
   
-  const takeThreshold = chipsOnCard + chipDesperation + riskAdjustment;
+  let takeThreshold = chipsOnCard + chipDesperation + riskAdjustment;
+
+  // AWARENESS: "Pushing" an opponent
+  // If we know an opponent HAS to take this card (they have 0 chips, or it connects perfectly for them), 
+  // we can drastically lower our threshold to take it, effectively forcing them to eat the bad card!
+  if (awareness >= 0.8) {
+      let opponentWillProbablyTakeIt = false;
+      for (const opp of gameState.players) {
+          if (opp.id === botPlayer.id) continue;
+          
+          const errorMargin = Math.max(0, Math.round((1 - awareness) * 5)); 
+          const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
+          
+          if (estimatedChips <= 0) opponentWillProbablyTakeIt = true;
+          
+          const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
+          if (oppCost <= 0) opponentWillProbablyTakeIt = true;
+      }
+      
+      // If we are extremely aware that an opponent is going to take it, we can comfortably pass
+      // even if we are getting somewhat low on chips, because we know the buck stops with them.
+      if (opponentWillProbablyTakeIt) {
+          takeThreshold -= 15; // Massively lower our willingness to take it. Let them have it.
+      }
+  }
 
   if (takeThreshold >= perceivedCost) {
       return 'take';

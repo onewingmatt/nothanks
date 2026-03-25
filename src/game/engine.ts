@@ -41,6 +41,7 @@ export function createInitialGameState(playerNames: string[], botIds: BotArchety
     
     // Default fallback in case of missing bot definition
     const skill = archetype ? archetype.skill : 0.5;
+    const awareness = archetype ? archetype.awareness : 0.5;
     const riskyness = archetype ? archetype.riskyness : 0.5;
     const name = archetype ? archetype.name : 'Unknown Bot';
     
@@ -50,7 +51,7 @@ export function createInitialGameState(playerNames: string[], botIds: BotArchety
       chips: STARTING_CHIPS,
       cards: [],
       isBot: true,
-      botConfig: { skill, riskyness }
+      botConfig: { skill, awareness, riskyness }
     });
   });
 

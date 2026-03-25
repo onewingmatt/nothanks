@@ -13,8 +13,9 @@ export interface Player {
 
 // Stats range from 0.0 (lowest) to 1.0 (highest)
 export interface BotConfig {
-  skill: number;
-  riskyness: number;
+  skill: number;     // Ability to calculate their own hand's EV and gap-bridging math
+  awareness: number; // Ability to track opponents' chips and predict opponents' hands
+  riskyness: number; // Willingness to milk good cards or pass bad cards when desperate
 }
 
 export interface GameState {
@@ -30,23 +31,22 @@ export interface GameState {
 export type BotAction = 'pass' | 'take';
 
 export const BOT_ARCHETYPES = [
-  // Low Skill
-  { id: 'low_low', name: 'Timid Novice', skill: 0.1, riskyness: 0.1, description: 'Only looks at face value. Terrified of taking cards.' },
-  { id: 'low_med', name: 'Average Joe', skill: 0.2, riskyness: 0.5, description: 'Basic plays. Doesn\'t count cards but sometimes takes a chance.' },
-  { id: 'low_high', name: 'Blind Gambler', skill: 0.1, riskyness: 0.9, description: 'Has no idea what\'s going on, but loves collecting chips.' },
+  // The Basics
+  { id: 'novice', name: 'Clueless Novice', skill: 0.1, awareness: 0.1, riskyness: 0.2, description: 'Only looks at face value. Blind to opponents. Terrified of taking cards.' },
+  { id: 'average', name: 'Average Joe', skill: 0.5, awareness: 0.3, riskyness: 0.5, description: 'Basic plays. Understands their own hand, but rarely watches others.' },
+  { id: 'gambler', name: 'Blind Gambler', skill: 0.2, awareness: 0.1, riskyness: 0.9, description: 'Doesn\'t count cards or opponents, just loves pushing their luck for chips.' },
   
-  // Medium Skill
-  { id: 'med_low', name: 'Safe Regular', skill: 0.5, riskyness: 0.2, description: 'Understands EV a bit, but plays it extremely safe.' },
-  { id: 'med_med', name: 'Balanced Player', skill: 0.5, riskyness: 0.5, description: 'A solid all-rounder. Makes mathematically sound choices.' },
-  { id: 'med_high', name: 'Greedy Pro', skill: 0.6, riskyness: 0.8, description: 'Calculates odds, but pushes their luck to hoard chips.' },
+  // The Specialists
+  { id: 'calculator', name: 'Tunnel-Vision Pro', skill: 0.9, awareness: 0.2, riskyness: 0.4, description: 'Mathematically perfect for their own hand (EV/Gaps), but ignores opponents.' },
+  { id: 'empath', name: 'The Watcher', skill: 0.3, awareness: 0.9, riskyness: 0.3, description: 'Terrible at math, but flawlessly tracks who has zero chips and what cards they need.' },
+  { id: 'bully', name: 'The Bully', skill: 0.6, awareness: 0.8, riskyness: 0.8, description: 'Sees what you need and steals it, or pushes their luck aggressively if they know you can\'t afford it.' },
 
-  // High Skill
-  { id: 'high_low', name: 'The Calculator', skill: 0.9, riskyness: 0.1, description: 'Counts exactly what\'s left. Takes perfect cards instantly without risking them.' },
-  { id: 'high_med', name: 'Grandmaster', skill: 0.9, riskyness: 0.5, description: 'Tracks opponent chips flawlessly. Plays the optimal strategy.' },
-  { id: 'high_high', name: 'Arrogant Shark', skill: 0.9, riskyness: 0.9, description: 'Calculates perfectly, then purposefully lets great cards circle to milk you.' },
+  // The Masters
+  { id: 'grandmaster', name: 'The Grandmaster', skill: 0.9, awareness: 0.9, riskyness: 0.5, description: 'Tracks everything perfectly. Makes the optimal mathematical play based on the whole board.' },
+  { id: 'shark', name: 'Arrogant Shark', skill: 0.9, awareness: 0.9, riskyness: 0.9, description: 'Calculates perfectly, reads your hand, and purposefully milks you for maximum chips.' },
 ];
 
 export type BotArchetypeId = 
-  | 'low_low' | 'low_med' | 'low_high' 
-  | 'med_low' | 'med_med' | 'med_high' 
-  | 'high_low' | 'high_med' | 'high_high';
+  | 'novice' | 'average' | 'gambler' 
+  | 'calculator' | 'empath' | 'bully' 
+  | 'grandmaster' | 'shark';

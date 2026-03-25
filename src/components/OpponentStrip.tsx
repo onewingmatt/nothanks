@@ -29,10 +29,18 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between">
-          <h3 className={`font-bold text-sm md:text-base truncate pr-2 ${isCurrentTurn ? 'text-[#8E0000]' : 'text-slate-800'}`}>
-            {player.name}
-          </h3>
-          <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-[10px] md:text-xs font-semibold text-slate-600 border border-slate-200">
+          <div className="flex items-center gap-2 pr-2 overflow-hidden">
+             <h3 className={`font-bold text-sm md:text-base truncate ${isCurrentTurn ? 'text-[#8E0000]' : 'text-slate-800'}`}>
+               {player.name}
+             </h3>
+             {player.isBot && player.botConfig && (
+                <div className="hidden md:flex gap-1">
+                   <span className="text-[8px] bg-slate-200 text-slate-500 px-1 rounded" title="Skill">S:{player.botConfig.skill}</span>
+                   <span className="text-[8px] bg-slate-200 text-slate-500 px-1 rounded" title="Awareness">A:{player.botConfig.awareness}</span>
+                </div>
+             )}
+          </div>
+          <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-[10px] md:text-xs font-semibold text-slate-600 border border-slate-200 flex-none">
              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
              {player.cards.length}
           </div>
