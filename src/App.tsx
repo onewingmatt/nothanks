@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GameBoard } from './components/GameBoard';
 import { Lobby } from './components/Lobby';
 import type { GameState, BotAction } from './game/models';
-import { createInitialGameState, processAction, calculateScore } from './game/engine';
+import { createInitialGameState, startGame, processAction, calculateScore } from './game/engine';
 import { evaluateBotDecision } from './game/ai';
 
 const App: React.FC = () => {
@@ -15,12 +15,18 @@ const App: React.FC = () => {
   const handleJoinGame = (playerName: string, roomCode: string, numBots: number) => {
     const botNames = ['Bot Alpha', 'Bot Beta', 'Bot Gamma', 'Bot Delta'].slice(0, numBots);
     
-    // In the future, this is where we'd connect to WebSockets with `roomCode`
-    // For now, initialize a local game immediately with the configured bots
+    // Create the room in a "waiting" state
     const initial = createInitialGameState([playerName], botNames);
     setGameState(initial);
     setRoomInfo({ name: playerName, room: roomCode, bots: numBots });
   };
+
+  const handleStartGame = useCallback(() => {
+    setGameState(prev => {
+      if (!prev) return prev;
+      return startGame(prev);
+    });
+  }, []);
 
   // Handle Player/Bot Actions
   const handleAction = useCallback((action: BotAction) => {
@@ -60,6 +66,7 @@ const App: React.FC = () => {
         gameState={gameState} 
         localPlayerId={localPlayerId} 
         onAction={handleAction} 
+        onStartGame={handleStartGame}
         hideChips={hideChips}
         onToggleHideChips={() => setHideChips(prev => !prev)}
         roomCode={roomInfo?.room}

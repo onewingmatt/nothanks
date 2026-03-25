@@ -50,18 +50,27 @@ export function createInitialGameState(playerNames: string[], botNames: string[]
     });
   });
 
-  // Reveal first card
-  const currentCard = deck.pop() || null;
-
   return {
     id: `game_${Date.now()}`,
     players,
-    currentPlayerIndex: Math.floor(Math.random() * players.length), // Random start
+    currentPlayerIndex: 0, // Starts at 0, but game hasn't started yet
     deck,
-    currentCard,
+    currentCard: null, // Revealed when game actually starts
     chipsOnCurrentCard: 0,
-    status: 'playing'
+    status: 'waiting' // NEW DEFAULT STATE
   };
+}
+
+export function startGame(gameState: GameState): GameState {
+  const newState = JSON.parse(JSON.stringify(gameState)) as GameState;
+  
+  if (newState.status !== 'waiting') return newState;
+
+  newState.status = 'playing';
+  newState.currentPlayerIndex = Math.floor(Math.random() * newState.players.length); // Random start
+  newState.currentCard = newState.deck.pop() || null;
+
+  return newState;
 }
 
 export function processAction(gameState: GameState, playerId: string, action: BotAction): GameState {
