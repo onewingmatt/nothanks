@@ -31,21 +31,21 @@ function createRoomCode(): string {
 }
 
 function loadStoredBots(storageKey: string): BotArchetypeId[] {
-  if (!canUseWindow) return ['average', 'calculator', 'empath'];
+  if (!canUseWindow) return [];
 
   try {
     const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return ['average', 'calculator', 'empath'];
+    if (!raw) return [];
 
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return ['average', 'calculator', 'empath'];
+    if (!Array.isArray(parsed)) return [];
 
     const validBotIds = new Set(BOT_ARCHETYPES.map(bot => bot.id));
     return parsed
       .filter((id): id is BotArchetypeId => typeof id === 'string' && validBotIds.has(id))
       .slice(0, 5);
   } catch {
-    return ['average', 'calculator', 'empath'];
+    return [];
   }
 }
 
