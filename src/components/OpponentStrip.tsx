@@ -49,7 +49,7 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
 
   return (
     <div className={`
-      native-panel-soft relative flex w-full max-w-[360px] items-start gap-3 rounded-[24px] border p-3 md:p-4 transition-all duration-300
+      group native-panel-soft relative flex w-full max-w-[360px] items-start gap-3 rounded-[24px] border p-3 md:p-4 transition-all duration-300
       ${isCurrentTurn ? 'border-orange-300/50 ring-2 ring-orange-300/24 shadow-lg scale-[1.01] z-10' : 'border-slate-500/20 opacity-95 hover:shadow-md hover:border-slate-400/40'}
     `}>
       <div className={`
@@ -91,7 +91,6 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
 
         {player.isBot && player.botConfig && (
           <div className="relative">
-            <div className="text-[9px] text-slate-400 italic">Hover for AI stats</div>
             <div className="absolute left-0 top-full mt-1 hidden w-44 rounded-lg border border-slate-700 bg-slate-900/95 p-2 text-xs text-slate-100 shadow-lg group-hover:block z-20">
               <div className="grid grid-cols-3 gap-1">
                 <div className="text-center">
