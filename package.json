@@ -8,6 +8,10 @@
     "dev:client": "vite",
     "dev:server": "node server/multiplayer-server.js",
     "build": "tsc -b && vite build",
+    "build:native": "npm run build && npx cap sync",
+    "cap:copy": "npm run build && npx cap copy",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npx cap open android",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server/multiplayer-server.js",
@@ -15,12 +19,15 @@
     "start:multiplayer": "node server/multiplayer-server.js"
   },
   "dependencies": {
+    "@capacitor/core": "^7.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "serve": "^14.2.6",
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",

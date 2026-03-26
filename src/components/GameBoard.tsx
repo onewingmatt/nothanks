@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { GameState, BotAction } from '../game/models';
 import { PlayerTableau } from './PlayerTableau';
 import { OpponentStrip } from './OpponentStrip';
@@ -28,6 +28,8 @@ interface GameBoardProps {
   onlineStatus?: string;
   isSpectator?: boolean;
   spectators?: Array<{ name: string; connected: boolean }>;
+  roomInviteUrl?: string;
+  multiplayerEndpointLabel?: string;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -53,8 +55,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   isOnlineHost = true,
   onlineStatus = '',
   isSpectator = false,
-  spectators = []
+  spectators = [],
+  roomInviteUrl,
+  multiplayerEndpointLabel,
 }) => {
+  const [shareFeedback, setShareFeedback] = useState<string>('');
   const localPlayer = gameState.players.find(p => p.id === localPlayerId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isLocalTurn = !isSpectator && gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
@@ -71,6 +76,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       : currentPlayer?.isBot
         ? `${currentPlayer.name} is thinking`
         : `${currentPlayer.name}'s turn`;
+
+  const handleShareInvite = async () => {
+    if (!roomInviteUrl || typeof window === 'undefined') return;
+
+    try {
+      if (typeof window.navigator.share === 'function') {
+        await window.navigator.share({
+          title: 'No Thanks! room invite',
+          text: roomCode ? `Join my No Thanks! room ${roomCode}` : 'Join my No Thanks! room',
+          url: roomInviteUrl,
+        });
+        setShareFeedback('Invite shared');
+      } else {
+        await window.navigator.clipboard.writeText(roomInviteUrl);
+        setShareFeedback('Invite copied');
+      }
+
+      window.setTimeout(() => {
+        setShareFeedback(current => (current ? '' : current));
+      }, 1600);
+    } catch {
+      setShareFeedback('');
+    }
+  };
 
   return (
     <div className="native-shell flex h-[100dvh] flex-col overflow-hidden text-slate-100">
@@ -177,6 +206,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                {isOnlineRoom && onlineStatus && (
                  <div className="mb-4 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-[11px] md:text-xs font-semibold text-cyan-100">
                    {onlineStatus}
+                 </div>
+               )}
+
+               {isOnlineRoom && roomInviteUrl && (
+                 <div className="mb-5 flex max-w-xl flex-wrap items-center justify-center gap-2">
+                   <button
+                     onClick={handleShareInvite}
+                     className="native-button-secondary px-4 py-2 text-xs font-black uppercase tracking-[0.14em]"
+                   >
+                     {shareFeedback || 'Share Invite Link'}
+                   </button>
+                   {multiplayerEndpointLabel && (
+                     <div className="rounded-full border border-white/10 bg-black/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-200">
+                       Shared endpoint {multiplayerEndpointLabel}
+                     </div>
+                   )}
                  </div>
                )}
 

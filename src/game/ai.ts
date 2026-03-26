@@ -1,4 +1,5 @@
 import type { GameState, Player, Card, BotAction } from './models';
+import type { RandomSource } from './cryptoUtils';
 
 // Constants for the game
 const DECK_SIZE = 33; // Cards 3-35
@@ -86,7 +87,8 @@ function evaluateBeneficialCard(
   perceivedCost: number,
   chipsOnCard: number,
   awareness: number,
-  riskyness: number
+  riskyness: number,
+  random: RandomSource
 ): BotAction {
   // If the bot has no risk appetite, take it immediately to be safe.
   if (riskyness < 0.4) return 'take';
@@ -107,7 +109,7 @@ function evaluateBeneficialCard(
         // AWARENESS UPGRADE: Track opponent chips
         // True chips +/- random error based on inverse awareness. Awareness 1.0 has 0 error. Awareness 0.4 has +/- 3 error.
         const errorMargin = Math.max(0, Math.round((1 - awareness) * 5));
-        const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
+        const estimatedChips = Math.max(0, opp.chips + (random() * errorMargin * 2 - errorMargin));
 
         if (estimatedChips <= 0) safeToPass = false;
 
@@ -124,13 +126,13 @@ function evaluateBeneficialCard(
     }
   } else {
     // Low awareness, high risk bots just randomly guess if it's safe because they aren't paying attention.
-    safeToPass = Math.random() > 0.5;
+    safeToPass = random() > 0.5;
   }
 
   if (!safeToPass) return 'take'; // Someone will steal it, grab it now.
 
   // It looks safe to pass. Will we risk it to get more chips?
-  const riskRoll = Math.random();
+  const riskRoll = random();
   if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take'; // Unless we are crazy risky, don't pass if we're low on chips
 
   if (riskRoll < riskyness) return 'pass'; // Milk it!
@@ -147,7 +149,8 @@ function evaluateBadCard(
   perceivedCost: number,
   chipsOnCard: number,
   awareness: number,
-  riskyness: number
+  riskyness: number,
+  random: RandomSource
 ): BotAction {
   const cardValue = gameState.currentCard!.value;
 
@@ -175,7 +178,7 @@ function evaluateBadCard(
           if (opp.id === botPlayer.id) continue;
           
           const errorMargin = Math.max(0, Math.round((1 - awareness) * 5)); 
-          const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
+          const estimatedChips = Math.max(0, opp.chips + (random() * errorMargin * 2 - errorMargin));
           
           if (estimatedChips <= 0) opponentWillProbablyTakeIt = true;
           
@@ -203,7 +206,7 @@ function evaluateBadCard(
  * Awareness: 0.0 to 1.0 (Tracks opponents' chips and predicts opponents' hands perfectly).
  * Risk: 0.0 to 1.0 (Will risk zero chips, will pass perfectly good cards to milk them).
  */
-export function evaluateBotDecision(gameState: GameState, botPlayer: Player): BotAction {
+export function evaluateBotDecision(gameState: GameState, botPlayer: Player, random: RandomSource = Math.random): BotAction {
   if (!gameState.currentCard) return 'pass'; // Should not happen during active turn
   if (botPlayer.chips === 0) return 'take'; // Forced to take
 
@@ -218,8 +221,8 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   const perceivedCost = calculatePerceivedCost(gameState, botPlayer, cardValue, chipsOnCard, skill);
 
   if (perceivedCost <= 0) {
-    return evaluateBeneficialCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness);
+    return evaluateBeneficialCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness, random);
   } else {
-    return evaluateBadCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness);
+    return evaluateBadCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness, random);
   }
 }

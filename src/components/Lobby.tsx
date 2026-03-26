@@ -1,4 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import {
+  buildRoomInvite,
+  getMultiplayerEndpointLabel,
+  isStandaloneDisplayMode,
+  readRoomInviteFromLocation,
+} from '../config/runtime';
 import { BOT_ARCHETYPES } from '../game/models';
 import type { BotArchetypeId } from '../game/models';
 import type { OnlineRole } from '../network/multiplayerClient';
@@ -8,6 +14,7 @@ type LobbyMode = 'online' | 'local';
 interface LobbyProps {
   onStartLocalGame: (playerName: string, roomCode: string, bots: BotArchetypeId[]) => void;
   onJoinOnlineGame: (playerName: string, roomCode: string, rolePreference: OnlineRole, botIds: BotArchetypeId[]) => void;
+  onBackToHome?: () => void;
   onlineStatus?: string;
   onlineError?: string;
   isOnlineConnecting?: boolean;
@@ -51,13 +58,30 @@ function loadStoredBots(storageKey: string): BotArchetypeId[] {
 
 function loadMode(): LobbyMode {
   if (!canUseWindow) return 'online';
+  const invite = readRoomInviteFromLocation();
+  if (invite) return 'online';
   const stored = window.localStorage.getItem(LOBBY_MODE_KEY);
   return stored === 'local' ? 'local' : 'online';
+}
+
+function loadRoomCode(): string {
+  if (!canUseWindow) return createRoomCode();
+
+  const invite = readRoomInviteFromLocation();
+  if (invite?.roomCode) return invite.roomCode;
+
+  return sanitizeRoomCode(window.localStorage.getItem(ROOM_CODE_KEY) || createRoomCode());
+}
+
+function loadJoinAsSpectator(): boolean {
+  if (!canUseWindow) return false;
+  return readRoomInviteFromLocation()?.rolePreference === 'spectator';
 }
 
 export const Lobby: React.FC<LobbyProps> = ({
   onStartLocalGame,
   onJoinOnlineGame,
+  onBackToHome,
   onlineStatus,
   onlineError,
   isOnlineConnecting = false,
@@ -67,16 +91,20 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (!canUseWindow) return 'Player One';
     return window.localStorage.getItem(PLAYER_NAME_KEY) || 'Player One';
   });
-  const [roomCode, setRoomCode] = useState<string>(() => {
-    if (!canUseWindow) return createRoomCode();
-    return sanitizeRoomCode(window.localStorage.getItem(ROOM_CODE_KEY) || createRoomCode());
-  });
+  const [roomCode, setRoomCode] = useState<string>(() => loadRoomCode());
   const [selectedBots, setSelectedBots] = useState<BotArchetypeId[]>(() => loadStoredBots(SELECTED_BOTS_KEY));
   const [selectedOnlineBots, setSelectedOnlineBots] = useState<BotArchetypeId[]>([]);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [joinAsSpectator, setJoinAsSpectator] = useState<boolean>(false);
+  const [copyFeedback, setCopyFeedback] = useState<'code' | 'invite' | null>(null);
+  const [joinAsSpectator, setJoinAsSpectator] = useState<boolean>(() => loadJoinAsSpectator());
 
   const playerCountLabel = useMemo(() => `${selectedBots.length + 1} total players`, [selectedBots.length]);
+  const launchInvite = useMemo(() => readRoomInviteFromLocation(), []);
+  const multiplayerEndpointLabel = useMemo(() => getMultiplayerEndpointLabel(), []);
+  const isStandalone = useMemo(() => isStandaloneDisplayMode(), []);
+  const roomInviteUrl = useMemo(
+    () => roomCode.trim() ? buildRoomInvite(roomCode, joinAsSpectator ? 'spectator' : 'player') : '',
+    [joinAsSpectator, roomCode],
+  );
 
   useEffect(() => {
     if (!canUseWindow) return;
@@ -119,17 +147,47 @@ export const Lobby: React.FC<LobbyProps> = ({
   const handleGenerateCode = () => {
     const next = createRoomCode();
     setRoomCode(next);
-    setCopied(false);
+    setCopyFeedback(null);
+  };
+
+  const flashCopyFeedback = (value: 'code' | 'invite') => {
+    setCopyFeedback(value);
+
+    if (!canUseWindow) return;
+    window.setTimeout(() => {
+      setCopyFeedback(current => (current === value ? null : current));
+    }, 1400);
   };
 
   const handleCopyCode = async () => {
     if (!canUseWindow || !roomCode.trim()) return;
+
     try {
-      await window.navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
+      await window.navigator.clipboard.writeText(roomCode.trim().toUpperCase());
+      flashCopyFeedback('code');
     } catch {
-      setCopied(false);
+      setCopyFeedback(null);
+    }
+  };
+
+  const handleShareInvite = async () => {
+    if (!canUseWindow || !roomInviteUrl) return;
+
+    try {
+      if (typeof window.navigator.share === 'function') {
+        await window.navigator.share({
+          title: 'No Thanks! room invite',
+          text: `Join my No Thanks! room ${roomCode.toUpperCase()}`,
+          url: roomInviteUrl,
+        });
+        flashCopyFeedback('invite');
+        return;
+      }
+
+      await window.navigator.clipboard.writeText(roomInviteUrl);
+      flashCopyFeedback('invite');
+    } catch {
+      setCopyFeedback(null);
     }
   };
 
@@ -172,6 +230,14 @@ export const Lobby: React.FC<LobbyProps> = ({
       <div className="native-orb bottom-[-5rem] left-[28%] h-44 w-44 bg-rose-400/20 md:h-72 md:w-72" />
 
       <div className="relative z-10 mx-auto max-w-6xl">
+        {onBackToHome && (
+          <div className="mb-3 flex justify-end">
+            <button type="button" onClick={onBackToHome} className="native-button-ghost px-4 py-2 text-xs font-black uppercase tracking-[0.16em]">
+              Back to home
+            </button>
+          </div>
+        )}
+
         <div className="mb-5 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
           <section className="native-panel-strong native-grid rounded-[28px] p-6 md:p-8">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/25 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/90">
@@ -249,7 +315,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                       value={roomCode}
                       onChange={e => {
                         setRoomCode(sanitizeRoomCode(e.target.value));
-                        setCopied(false);
+                        setCopyFeedback(null);
                       }}
                       maxLength={8}
                       className="native-input uppercase tracking-[0.35em]"
@@ -257,7 +323,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                     />
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" onClick={handleGenerateCode} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em]">New code</button>
-                      <button type="button" onClick={handleCopyCode} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em]">{copied ? 'Copied' : 'Copy room code'}</button>
+                      <button type="button" onClick={handleCopyCode} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em]">{copyFeedback === 'code' ? 'Copied' : 'Copy room code'}</button>
+                      {mode === 'online' && (
+                        <button type="button" onClick={handleShareInvite} disabled={!roomInviteUrl} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-50">{copyFeedback === 'invite' ? 'Invite ready' : 'Share invite'}</button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -268,6 +337,13 @@ export const Lobby: React.FC<LobbyProps> = ({
                   <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online readiness</div>
                   <div className="mt-2 text-sm leading-6 text-slate-300/88">Live room sync is available across supported clients. Hosts can add bots deliberately, while spectators can join active games without taking a seat.</div>
 
+                  {launchInvite && (
+                    <div className="mt-4 rounded-2xl border border-amber-300/22 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+                      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-100/80">Invite detected</div>
+                      <div className="mt-1 font-semibold">Room {launchInvite.roomCode} is prefilled for a {launchInvite.rolePreference === 'spectator' ? 'spectator' : 'player'} join.</div>
+                    </div>
+                  )}
+
                   <label className="mt-4 flex items-start gap-3 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-4 py-3 text-sm text-cyan-100/92">
                     <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
                     <span>
@@ -275,6 +351,21 @@ export const Lobby: React.FC<LobbyProps> = ({
                       <span className="mt-1 block text-xs leading-5 text-cyan-100/78">Useful for watching an active room or reserving yourself for the next match.</span>
                     </span>
                   </label>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-300/76">Shared endpoint</div>
+                      <div className="mt-2 break-all text-sm font-black text-white">{multiplayerEndpointLabel}</div>
+                      <div className="mt-1 text-xs leading-5 text-slate-300/72">Web, Android, and iOS clients can all connect to this same `/ws` backend.</div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-300/76">Native shell</div>
+                        <div className="rounded-full border border-cyan-300/22 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100">{isStandalone ? 'Standalone' : 'Install-ready'}</div>
+                      </div>
+                      <div className="mt-2 break-all text-xs leading-5 text-slate-300/78">{roomInviteUrl || 'Generate a room code to create a deep link that opens directly into this shared room flow.'}</div>
+                    </div>
+                  </div>
 
                   {onlineStatus && <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 px-4 py-3 text-sm font-semibold text-cyan-100">Status: {onlineStatus}</div>}
                   {onlineError && <div className="mt-3 rounded-2xl border border-rose-300/22 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">{onlineError}</div>}

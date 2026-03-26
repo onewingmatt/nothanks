@@ -1,4 +1,5 @@
 import type { BotAction, GameState } from '../game/models';
+import { getMultiplayerWebSocketUrl } from '../config/runtime';
 
 export type OnlineRole = 'player' | 'spectator';
 
@@ -46,27 +47,13 @@ interface ConnectArgs {
   onError?: () => void;
 }
 
-function resolveWsUrl(): string {
-  const fromEnv = import.meta.env.VITE_WS_URL as string | undefined;
-  if (fromEnv && fromEnv.trim()) {
-    return fromEnv;
-  }
-
-  if (typeof window === 'undefined') {
-    return 'ws://localhost:8787/ws';
-  }
-
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws`;
-}
-
 export class MultiplayerClient {
   private socket: WebSocket | null = null;
 
   connect(args: ConnectArgs): void {
     this.disconnect();
 
-    const ws = new WebSocket(resolveWsUrl());
+    const ws = new WebSocket(getMultiplayerWebSocketUrl());
     this.socket = ws;
 
     ws.addEventListener('open', () => {

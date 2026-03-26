@@ -1,0 +1,25 @@
+{
+  "name": "No Thanks!",
+  "short_name": "No Thanks!",
+  "description": "A premium cross-platform No Thanks! experience with live rooms shared across web, Android, and iOS.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1422",
+  "theme_color": "#0b1422",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

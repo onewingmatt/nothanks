@@ -33,12 +33,25 @@ The transport protocol is plain WebSocket JSON, so native clients can join the s
 
 - Default local endpoint used by web app: `ws://localhost:8787/ws`
 - Override endpoint with env var: `VITE_WS_URL`
+- Alternatively provide `VITE_SERVER_ORIGIN=https://your-domain.com` and the client will derive `wss://your-domain.com/ws`
+- Set `VITE_PUBLIC_APP_URL=https://your-domain.com` when generating invite links from mobile/web builds behind a different public origin
 
 Example:
 
 - `VITE_WS_URL=wss://your-domain.com/ws`
+- `VITE_SERVER_ORIGIN=https://your-domain.com`
+- `VITE_PUBLIC_APP_URL=https://play.your-domain.com`
 
 For mobile app builds (React Native, Capacitor, Flutter, native iOS/Android), point each client to the same `wss://.../ws` endpoint and reuse the room code join flow.
+
+### Deep-Link Room Invites
+
+The web client now understands room invites through query params, which native wrappers can also generate and consume.
+
+- Player invite: `/?mode=online&room=ABC123`
+- Spectator invite: `/?mode=online&room=ABC123&role=spectator`
+
+This makes it easier to share one room flow across browser, Android, and iOS clients while keeping the same backend room server.
 
 ## Identity and Reconnect
 
@@ -60,6 +73,24 @@ For mobile app builds (React Native, Capacitor, Flutter, native iOS/Android), po
 - Minimum 2 players required.
 - Max 6 players per room.
 - Spectators are unlimited.
+
+## Native Android Prep (Capacitor)
+
+The web client is now prepared for a Capacitor shell so Android can package the same React app while still connecting to the same multiplayer backend.
+
+1. Install dependencies:
+   - `npm install`
+2. Build and sync native assets:
+   - `npm run cap:sync`
+3. Add Android platform the first time:
+   - `npx cap add android`
+4. Open the Android project:
+   - `npm run cap:android`
+
+Notes:
+- Set `VITE_SERVER_ORIGIN` or `VITE_WS_URL` so Android builds target the same room server as web.
+- Room invite URLs and room-code join behavior stay shared between web and native shells.
+- Capacitor packaging does not replace the Node room server; it only wraps the client.
 
 ## Production Deployment (Single Domain + TLS)
 

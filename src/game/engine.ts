@@ -1,13 +1,17 @@
 import type { GameState, Player, Card, BotAction, BotArchetypeId } from './models';
 import { BOT_ARCHETYPES } from './models';
-import { getSecureRandomInt } from './cryptoUtils';
+import { getRandomInt, type RandomSource } from './cryptoUtils';
 
 const DECK_SIZE = 33; // Cards 3-35
 const MIN_CARD = 3;
 const CARDS_REMOVED = 9;
 const STARTING_CHIPS = 11;
 
-export function createInitialGameState(playerNames: string[], botIds: BotArchetypeId[]): GameState {
+interface GameCreationOptions {
+  random?: RandomSource;
+}
+
+export function createInitialGameState(playerNames: string[], botIds: BotArchetypeId[], options: GameCreationOptions = {}): GameState {
   // 1. Create Deck
   let deck: Card[] = [];
   for (let i = 0; i < DECK_SIZE; i++) {
@@ -16,7 +20,7 @@ export function createInitialGameState(playerNames: string[], botIds: BotArchety
 
   // Shuffle Deck (Fisher-Yates)
   for (let i = deck.length - 1; i > 0; i--) {
-    const j = getSecureRandomInt(i + 1);
+    const j = getRandomInt(i + 1, options.random);
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
@@ -67,13 +71,13 @@ export function createInitialGameState(playerNames: string[], botIds: BotArchety
   };
 }
 
-export function startGame(gameState: GameState): GameState {
+export function startGame(gameState: GameState, options: GameCreationOptions = {}): GameState {
   const newState = JSON.parse(JSON.stringify(gameState)) as GameState;
   
   if (newState.status !== 'waiting') return newState;
 
   newState.status = 'playing';
-  newState.currentPlayerIndex = getSecureRandomInt(newState.players.length); // Random start
+  newState.currentPlayerIndex = getRandomInt(newState.players.length, options.random); // Random start
   newState.currentCard = newState.deck.pop() || null;
 
   return newState;

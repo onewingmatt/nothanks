@@ -1,11 +1,20 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import {
+  buildRoomInvite,
+  getMultiplayerEndpointLabel,
+  isStandaloneDisplayMode,
+  readRoomInviteFromLocation,
+  syncRoomInviteInLocation,
+} from './config/runtime';
 import { GameBoard } from './components/GameBoard';
+import { HomeHub } from './components/HomeHub';
 import { Lobby } from './components/Lobby';
 import { TutorialOverlay } from './components/TutorialOverlay';
-import type { GameState, BotAction, BotArchetypeId } from './game/models';
+import { BOT_ARCHETYPES, type GameState, type BotAction, type BotArchetypeId } from './game/models';
 import { createInitialGameState, startGame, processAction, calculateScore } from './game/engine';
 import { evaluateBotDecision } from './game/ai';
+import { createSeededRandom, type RandomSource } from './game/cryptoUtils';
 import { feedbackEngine } from './utils/feedback';
 import { MultiplayerClient } from './network/multiplayerClient';
 import type { MultiplayerMessage, OnlineRole, SpectatorInfo } from './network/multiplayerClient';
@@ -14,6 +23,8 @@ const canUseWindow = typeof window !== 'undefined';
 const PROFILE_STATS_KEY = 'nt_profile_stats';
 const SEEN_HINTS_KEY = 'nt_seen_mistake_hints';
 const GUEST_AUTH_TOKEN_KEY = 'nt_guest_auth_token';
+const PLAYER_NAME_KEY = 'nt_lobby_player_name';
+const QUICK_MATCH_BOTS: BotArchetypeId[] = ['average', 'calculator', 'empath'];
 
 function getStoredToggle(key: string, fallback: boolean): boolean {
   if (!canUseWindow) return fallback;
@@ -57,6 +68,8 @@ interface ProfileStats {
 }
 
 type RoomMode = 'local' | 'online';
+type AppShellScreen = 'home' | 'play';
+type SessionPreset = 'standard' | 'quick' | 'daily';
 
 interface RoomInfo {
   name: string;
@@ -103,6 +116,35 @@ function createTodaySeed(): string {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
+}
+
+function getPreferredPlayerName(): string {
+  if (!canUseWindow) return 'Player One';
+  return window.localStorage.getItem(PLAYER_NAME_KEY) || 'Player One';
+}
+
+function createLocalRoomCode(prefix: string): string {
+  const compact = prefix.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 2);
+  const suffix = Date.now().toString(36).toUpperCase().slice(-6);
+  return `${compact}${suffix}`.slice(0, 8);
+}
+
+function createDailyRoomCode(seed: string): string {
+  return `D${seed.slice(2, 8)}`;
+}
+
+function buildDailyBotLineup(seed: string): BotArchetypeId[] {
+  const random = createSeededRandom(`daily-lineup:${seed}`);
+  const pool = BOT_ARCHETYPES.map(bot => bot.id as BotArchetypeId);
+  const lineup: BotArchetypeId[] = [];
+
+  while (pool.length > 0 && lineup.length < 3) {
+    const index = Math.floor(random() * pool.length);
+    const [botId] = pool.splice(index, 1);
+    lineup.push(botId);
+  }
+
+  return lineup;
 }
 
 function formatOrdinal(value: number): string {
@@ -278,6 +320,8 @@ function buildInsights(actionLog: ActionLogEntry[], localPlayerId: string): Insi
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [localPlayerId, setLocalPlayerId] = useState<string>('p_1');
+  const [shellScreen, setShellScreen] = useState<AppShellScreen>(() => (readRoomInviteFromLocation() ? 'play' : 'home'));
+  const [sessionPreset, setSessionPreset] = useState<SessionPreset>('standard');
   const [showTutorial, setShowTutorial] = useState<boolean>(() => {
     if (!canUseWindow) return true;
     return window.localStorage.getItem('nt_tutorial_seen') !== '1';
@@ -307,6 +351,11 @@ const App: React.FC = () => {
   const recordedGameIdRef = useRef<string | null>(null);
   const multiplayerClientRef = useRef<MultiplayerClient | null>(null);
   const guestAuthTokenRef = useRef<string>(getOrCreateGuestAuthToken());
+  const sessionRandomRef = useRef<RandomSource | null>(null);
+  const dailySeed = profileStats.daily.seed;
+  const dailyLineup = useMemo(() => buildDailyBotLineup(dailySeed), [dailySeed]);
+  const dailyLineupLabels = useMemo(() => dailyLineup.map(botId => BOT_ARCHETYPES.find(bot => bot.id === botId)?.name || botId), [dailyLineup]);
+  const installReady = isStandaloneDisplayMode();
 
   // Manage Document Title
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -563,11 +612,18 @@ const App: React.FC = () => {
   }, [gameState, hapticsEnabled, soundEnabled]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleStartLocalGame = (playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
+  const startLocalSession = useCallback((playerName: string, roomCode: string, bots: BotArchetypeId[], options?: { autoStart?: boolean; preset?: SessionPreset; seed?: string }) => {
     disconnectMultiplayer('Offline mode');
+    syncRoomInviteInLocation(null);
 
-    const initial = createInitialGameState([playerName], bots);
-    setGameState(initial);
+    sessionRandomRef.current = options?.seed ? createSeededRandom(options.seed) : null;
+    setSessionPreset(options?.preset ?? 'standard');
+
+    const random = sessionRandomRef.current ?? undefined;
+    const initial = createInitialGameState([playerName], bots, { random });
+    const nextState = options?.autoStart ? startGame(initial, { random }) : initial;
+
+    setGameState(nextState);
     setRoomInfo({ name: playerName, room: roomCode, bots, mode: 'local' });
     setLocalPlayerId('p_1');
     setOnlineRole('player');
@@ -575,11 +631,36 @@ const App: React.FC = () => {
     setActionLog([]);
     setMistakeHint('');
     setOnlineError('');
+    setIsBotThinking(false);
+    setShellScreen('play');
     recordedGameIdRef.current = null;
-  };
+  }, [disconnectMultiplayer]);
+
+  const handleStartLocalGame = useCallback((playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
+    startLocalSession(playerName, roomCode, bots, { preset: 'standard' });
+  }, [startLocalSession]);
+
+  const handleQuickSolo = useCallback(() => {
+    startLocalSession(getPreferredPlayerName(), createLocalRoomCode('QK'), QUICK_MATCH_BOTS, {
+      autoStart: true,
+      preset: 'quick',
+    });
+  }, [startLocalSession]);
+
+  const handleStartDailyChallenge = useCallback(() => {
+    startLocalSession(getPreferredPlayerName(), createDailyRoomCode(dailySeed), dailyLineup, {
+      autoStart: true,
+      preset: 'daily',
+      seed: `daily:${dailySeed}`,
+    });
+  }, [dailyLineup, dailySeed, startLocalSession]);
 
   const handleJoinOnlineGame = useCallback((playerName: string, roomCode: string, rolePreference: OnlineRole, botIds: BotArchetypeId[]) => {
     disconnectMultiplayer();
+    syncRoomInviteInLocation({ mode: 'online', roomCode, rolePreference });
+    sessionRandomRef.current = null;
+    setSessionPreset('standard');
+    setShellScreen('play');
     setOnlineError('');
     setIsOnlineConnecting(true);
     setOnlineStatus('Connecting to room server...');
@@ -627,7 +708,7 @@ const App: React.FC = () => {
 
     setGameState(prev => {
       if (!prev) return prev;
-      return startGame(prev);
+      return startGame(prev, { random: sessionRandomRef.current ?? undefined });
     });
   }, [hapticsEnabled, hapticsSupported, roomInfo?.mode]);
 
@@ -715,17 +796,19 @@ const App: React.FC = () => {
           wins: previous.wins + (didWin ? 1 : 0),
           streak: didWin ? previous.streak + 1 : 0,
           bestScore: previous.bestScore == null ? localResult.score : Math.min(previous.bestScore, localResult.score),
-          daily: {
-            seed: todaySeed,
-            attempts: daily.attempts + 1,
-            bestScore: daily.bestScore == null ? localResult.score : Math.min(daily.bestScore, localResult.score),
-          },
+          daily: sessionPreset === 'daily'
+            ? {
+                seed: todaySeed,
+                attempts: daily.attempts + 1,
+                bestScore: daily.bestScore == null ? localResult.score : Math.min(daily.bestScore, localResult.score),
+              }
+            : daily,
         };
       });
     });
 
     recordedGameIdRef.current = gameState.id;
-  }, [gameState, localPlayerId]);
+  }, [gameState, localPlayerId, sessionPreset]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Bot Turn Loop
@@ -744,11 +827,11 @@ const App: React.FC = () => {
         setIsBotThinking(true);
       });
 
-      // Simulate thinking time (500ms - 1500ms)
-      const thinkingTime = 500 + Math.random() * 1000;
+      const random = sessionRandomRef.current ?? Math.random;
+      const thinkingTime = 500 + random() * 1000;
       
       const timeout = setTimeout(() => {
-        const action = evaluateBotDecision(gameState, currentPlayer);
+        const action = evaluateBotDecision(gameState, currentPlayer, random);
         setIsBotThinking(false);
         handleAction(action);
       }, thinkingTime);
@@ -768,21 +851,67 @@ const App: React.FC = () => {
   const handleReturnToLobby = useCallback(() => {
     if (roomInfo?.mode === 'online') {
       disconnectMultiplayer('Disconnected');
+    } else {
+      syncRoomInviteInLocation(null);
     }
 
     setGameState(null);
     setMistakeHint('');
+    setShellScreen('play');
   }, [disconnectMultiplayer, roomInfo?.mode]);
+
+  const handleBackToHome = useCallback(() => {
+    disconnectMultiplayer('Idle');
+    syncRoomInviteInLocation(null);
+    sessionRandomRef.current = null;
+    setSessionPreset('standard');
+    setGameState(null);
+    setRoomInfo(null);
+    setMistakeHint('');
+    setOnlineError('');
+    setIsBotThinking(false);
+    setShellScreen('home');
+  }, [disconnectMultiplayer]);
 
   if (!gameState) {
     return (
-      <Lobby
-        onStartLocalGame={handleStartLocalGame}
-        onJoinOnlineGame={handleJoinOnlineGame}
-        onlineStatus={onlineStatus}
-        onlineError={onlineError}
-        isOnlineConnecting={isOnlineConnecting}
-      />
+      <>
+        {shellScreen === 'home' ? (
+          <HomeHub
+            dailySeed={dailySeed}
+            dailyLineupLabels={dailyLineupLabels}
+            endpointLabel={getMultiplayerEndpointLabel()}
+            installReady={installReady}
+            soundEnabled={soundEnabled}
+            hapticsEnabled={hapticsEnabled}
+            hapticsSupported={hapticsSupported}
+            profileStats={profileStats}
+            onOpenLobby={() => setShellScreen('play')}
+            onQuickSolo={handleQuickSolo}
+            onStartDaily={handleStartDailyChallenge}
+            onOpenTutorial={handleOpenTutorial}
+            onToggleSound={() => setSoundEnabled(prev => !prev)}
+            onToggleHaptics={handleToggleHaptics}
+          />
+        ) : (
+          <Lobby
+            onStartLocalGame={handleStartLocalGame}
+            onJoinOnlineGame={handleJoinOnlineGame}
+            onBackToHome={handleBackToHome}
+            onlineStatus={onlineStatus}
+            onlineError={onlineError}
+            isOnlineConnecting={isOnlineConnecting}
+          />
+        )}
+
+        {showTutorial && (
+          <TutorialOverlay
+            isOpen={showTutorial}
+            onClose={handleCloseTutorial}
+            onComplete={handleCompleteTutorial}
+          />
+        )}
+      </>
     );
   }
 
@@ -793,6 +922,8 @@ const App: React.FC = () => {
   const winner = finalResults[0]?.player;
   const localPlacement = finalResults.findIndex(result => result.player.id === localPlayerId);
   const localPlacementLabel = localPlacement >= 0 ? formatOrdinal(localPlacement + 1) : null;
+  const roomInviteUrl = roomInfo?.mode === 'online' && roomInfo.room ? buildRoomInvite(roomInfo.room) : undefined;
+  const multiplayerEndpointLabel = roomInfo?.mode === 'online' ? getMultiplayerEndpointLabel() : undefined;
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -820,6 +951,8 @@ const App: React.FC = () => {
         onlineStatus={onlineStatus}
         isSpectator={roomInfo?.mode === 'online' && onlineRole === 'spectator'}
         spectators={spectators}
+        roomInviteUrl={roomInviteUrl}
+        multiplayerEndpointLabel={multiplayerEndpointLabel}
       />
 
       {showTutorial && (
@@ -835,9 +968,9 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-[#050c15]/78 p-3 md:p-6 backdrop-blur-sm">
           <div className="native-panel mx-auto flex h-full max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-slate-300/28 md:max-h-[calc(100dvh-3rem)]">
             <div className="native-panel-strong border-b border-amber-200/25 px-5 py-5 md:px-7 md:py-6">
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/85">Match Complete</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/85">{sessionPreset === 'daily' ? 'Daily Run Complete' : 'Match Complete'}</div>
               <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-white md:text-5xl">Game Over</h2>
-              <div className="mt-4 grid gap-2 text-sm text-slate-200/90 md:grid-cols-3">
+              <div className="mt-4 grid gap-2 text-sm text-slate-200/90 md:grid-cols-4">
                 <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Winner</div>
                   <div className="mt-1 text-base font-black text-white">{winner ? winner.name : 'Unknown'}</div>
@@ -849,6 +982,10 @@ const App: React.FC = () => {
                 <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Players</div>
                   <div className="mt-1 text-base font-black text-white">{finalResults.length}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Mode</div>
+                  <div className="mt-1 text-base font-black text-white">{sessionPreset === 'daily' ? `Daily ${dailySeed}` : sessionPreset === 'quick' ? 'Quick Solo' : roomInfo?.mode === 'online' ? 'Online Room' : 'Local Match'}</div>
                 </div>
               </div>
             </div>
@@ -912,14 +1049,26 @@ const App: React.FC = () => {
                 <button
                   onClick={() => {
                     if (roomInfo?.mode === 'local') {
-                      handleStartLocalGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                      if (sessionPreset === 'daily') {
+                        handleStartDailyChallenge();
+                      } else if (sessionPreset === 'quick') {
+                        handleQuickSolo();
+                      } else {
+                        handleStartLocalGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                      }
                     } else {
                       handleReturnToLobby();
                     }
                   }}
                   className="native-button-primary w-full py-3.5 text-base md:text-lg font-black uppercase tracking-[0.14em]"
                 >
-                  {roomInfo?.mode === 'local' ? 'Play Again' : 'Return To Lobby'}
+                  {roomInfo?.mode === 'local'
+                    ? sessionPreset === 'daily'
+                      ? 'Replay Daily Run'
+                      : sessionPreset === 'quick'
+                        ? 'Play Quick Solo Again'
+                        : 'Play Again'
+                    : 'Return To Lobby'}
                 </button>
 
                 <button

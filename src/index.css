@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: dark;
   --native-bg-top: #0b1422;
   --native-bg-bottom: #14263b;
   --native-panel-top: rgba(19, 30, 46, 0.9);
@@ -19,6 +20,8 @@
   --native-shadow-lg: 0 24px 80px rgba(3, 8, 20, 0.42);
   --native-shadow-md: 0 16px 40px rgba(3, 8, 20, 0.28);
   --native-shadow-sm: 0 8px 20px rgba(3, 8, 20, 0.18);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html {
@@ -29,6 +32,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overscroll-behavior-y: none;
   background:
     radial-gradient(circle at 16% 18%, rgba(245, 158, 11, 0.18), transparent 24%),
     radial-gradient(circle at 84% 12%, rgba(115, 215, 231, 0.16), transparent 22%),
@@ -36,10 +40,12 @@ body {
     linear-gradient(180deg, var(--native-bg-top) 0%, #102033 52%, var(--native-bg-bottom) 100%);
   color: var(--native-text);
   font-family: "Avenir Next", "Trebuchet MS", "Segoe UI Variable", "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: rgba(241, 137, 92, 0.18);
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 button,
@@ -47,6 +53,7 @@ input,
 textarea,
 select {
   font: inherit;
+  touch-action: manipulation;
 }
 
 ::selection {
