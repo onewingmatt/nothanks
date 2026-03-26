@@ -850,9 +850,8 @@ const App: React.FC = () => {
   const handleReturnToLobby = useCallback(() => {
     if (roomInfo?.mode === 'online') {
       disconnectMultiplayer('Disconnected');
-    } else {
-      syncRoomInviteInLocation(null);
     }
+    syncRoomInviteInLocation(null);
 
     if (canUseWindow) {
       window.localStorage.removeItem(ROOM_CODE_KEY);
