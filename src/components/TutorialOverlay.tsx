@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface TutorialOverlayProps {
   isOpen: boolean;
@@ -53,12 +53,6 @@ const TUTORIAL_STEPS: TutorialStep[] = [
 
 export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ isOpen, onClose, onComplete }) => {
   const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    if (isOpen) {
-      setStepIndex(0);
-    }
-  }, [isOpen]);
 
   const currentStep = useMemo(() => TUTORIAL_STEPS[stepIndex], [stepIndex]);
   const isFirstStep = stepIndex === 0;

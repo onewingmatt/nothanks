@@ -23,6 +23,11 @@ interface GameBoardProps {
   turnPulseKey: number;
   prefersReducedMotion: boolean;
   roomCode?: string;
+  isOnlineRoom?: boolean;
+  isOnlineHost?: boolean;
+  onlineStatus?: string;
+  isSpectator?: boolean;
+  spectators?: Array<{ name: string; connected: boolean }>;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -43,18 +48,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   isBotThinking,
   turnPulseKey,
   prefersReducedMotion,
-  roomCode
+  roomCode,
+  isOnlineRoom = false,
+  isOnlineHost = true,
+  onlineStatus = '',
+  isSpectator = false,
+  spectators = []
 }) => {
   const localPlayer = gameState.players.find(p => p.id === localPlayerId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  const isLocalTurn = gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
+  const isLocalTurn = !isSpectator && gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
   const canPass = localPlayer && localPlayer.chips > 0;
   const isWaiting = gameState.status === 'waiting';
 
   const currentCardColor = gameState.currentCard ? getCardColor(gameState.currentCard.value) : '#400000';
   const turnLabel = isWaiting
     ? 'Waiting for start'
-    : isLocalTurn
+    : isSpectator
+      ? `Spectating - ${currentPlayer?.name || 'Player'}'s turn`
+      : isLocalTurn
       ? 'Your turn'
       : currentPlayer?.isBot
         ? `${currentPlayer.name} is thinking`
@@ -74,6 +86,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {roomCode && (
             <div className="hidden md:flex bg-black/40 px-2.5 py-1 rounded text-[10px] md:text-xs font-medium text-slate-300 border border-slate-700">
               ROOM: <span className="text-white ml-1 font-bold">{roomCode}</span>
+            </div>
+          )}
+          {isOnlineRoom && isSpectator && (
+            <div className="hidden md:flex bg-indigo-900/40 px-2.5 py-1 rounded text-[10px] md:text-xs font-bold text-indigo-100 border border-indigo-700">
+              SPECTATOR
             </div>
           )}
         </div>
@@ -162,8 +179,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <div className="z-10 flex flex-col items-center text-center animate-fade-in p-4 overflow-y-auto max-h-full">
                <h2 className="text-xl md:text-3xl font-black tracking-tight text-[#400000] mb-2">Waiting for Players</h2>
                <p className="text-slate-500 text-xs md:text-base mb-6 font-medium max-w-sm">
-                 Share the room code <strong className="text-slate-700">{roomCode}</strong> with others, or start now with {gameState.players.length - 1} bots.
+                 {isOnlineRoom
+                   ? <>Share room code <strong className="text-slate-700">{roomCode}</strong> so friends can join from web, Android, or iOS clients.</>
+                   : <>Share the room code <strong className="text-slate-700">{roomCode}</strong> with others, or start now with {gameState.players.length - 1} bots.</>}
                </p>
+
+               {isOnlineRoom && onlineStatus && (
+                 <div className="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-[11px] md:text-xs font-semibold text-cyan-900">
+                   {onlineStatus}
+                 </div>
+               )}
                
                {/* Display players currently in lobby */}
                <div className="flex gap-2 flex-wrap justify-center mb-8 max-w-md">
@@ -173,14 +198,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                      {p.name} {p.isBot && '🤖'}
                    </div>
                  ))}
+                 {spectators.map(spectator => (
+                   <div key={`spectator-${spectator.name}`} className="bg-indigo-50 border border-indigo-200 shadow-sm rounded-full px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-bold text-indigo-700 flex items-center gap-2">
+                     <span className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${spectator.connected ? 'bg-indigo-500' : 'bg-slate-400'}`}></span>
+                     {spectator.name} (spectator)
+                   </div>
+                 ))}
                </div>
 
-               <button
-                  onClick={onStartGame}
-                  className="px-8 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#1A237E] text-white shadow-lg border-2 border-[#1A237E] hover:bg-[#000767] hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all duration-200"
-               >
-                 START GAME
-               </button>
+              <button
+                onClick={onStartGame}
+                disabled={isOnlineRoom && !isOnlineHost}
+                className="px-8 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#1A237E] text-white shadow-lg border-2 border-[#1A237E] hover:bg-[#000767] hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                {isOnlineRoom ? (isOnlineHost ? 'START MATCH' : 'WAITING FOR HOST') : 'START GAME'}
+              </button>
             </div>
           ) : (
             // ACTIVE GAME UI
@@ -282,10 +314,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
               {/* Local Player Turn Controls */}
               {/* Reduced mobile height from 56px to 48px */}
-              <div className={`
-                mt-6 md:mt-10 flex gap-3 md:gap-5 transition-opacity duration-300 z-10 flex-none h-[48px] md:h-[56px]
-                ${isLocalTurn ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-              `}>
+              {!isSpectator && (
+                <div className={`
+                  mt-6 md:mt-10 flex gap-3 md:gap-5 transition-opacity duration-300 z-10 flex-none h-[48px] md:h-[56px]
+                  ${isLocalTurn ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                `}>
                 <button
                   onClick={() => onAction('pass')}
                   disabled={!canPass || !isLocalTurn}
@@ -318,7 +351,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     +{gameState.chipsOnCurrentCard} CHIPS
                   </span>
                 </button>
-              </div>
+                </div>
+              )}
+
+              {isSpectator && (
+                <div className="mt-6 md:mt-10 rounded-full border border-indigo-300 bg-indigo-50 px-4 py-2 text-[11px] md:text-sm font-bold uppercase tracking-wider text-indigo-900">
+                  Spectating - controls disabled
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -329,7 +369,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Reduced mobile height from 140px to 125px */}
       <footer className={`flex-none bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 
                          h-[125px] md:h-[150px] w-full overflow-hidden transition-opacity duration-300 ${isWaiting ? 'opacity-0 pointer-events-none' : 'opacity-100 block'}`}>
-         {localPlayer && (
+        {!isSpectator && localPlayer && (
             <div className="w-full h-full max-w-7xl mx-auto px-2 md:px-6 py-2 md:py-3 flex justify-center">
                <div className="flex flex-col h-full w-full border border-slate-300 rounded-xl bg-[#f9f9f9] shadow-sm overflow-hidden">
                   
@@ -365,6 +405,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                </div>
             </div>
          )}
+
+          {isSpectator && (
+            <div className="w-full h-full max-w-5xl mx-auto px-2 md:px-6 py-2 md:py-3 flex items-center justify-center">
+              <div className="w-full border border-indigo-200 rounded-xl bg-indigo-50 px-4 py-3 text-center">
+               <div className="text-sm md:text-base font-extrabold text-indigo-900">Spectator View</div>
+               <div className="text-xs md:text-sm text-indigo-800 mt-1">You joined as spectator. You can watch this match live and join as a player before the next game starts.</div>
+              </div>
+            </div>
+          )}
       </footer>
 
     </div>

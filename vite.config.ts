@@ -7,5 +7,12 @@ export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
     https: {},
+    proxy: {
+      '/ws': {
+        target: 'ws://localhost:8787',
+        ws: true,
+        secure: false,
+      },
+    },
   },
 })

@@ -6,10 +6,13 @@ import type { GameState, BotAction, BotArchetypeId } from './game/models';
 import { createInitialGameState, startGame, processAction, calculateScore } from './game/engine';
 import { evaluateBotDecision } from './game/ai';
 import { feedbackEngine } from './utils/feedback';
+import { MultiplayerClient } from './network/multiplayerClient';
+import type { MultiplayerMessage, OnlineRole, SpectatorInfo } from './network/multiplayerClient';
 
 const canUseWindow = typeof window !== 'undefined';
 const PROFILE_STATS_KEY = 'nt_profile_stats';
 const SEEN_HINTS_KEY = 'nt_seen_mistake_hints';
+const GUEST_AUTH_TOKEN_KEY = 'nt_guest_auth_token';
 
 function getStoredToggle(key: string, fallback: boolean): boolean {
   if (!canUseWindow) return fallback;
@@ -50,6 +53,47 @@ interface ProfileStats {
     attempts: number;
     bestScore: number | null;
   };
+}
+
+type RoomMode = 'local' | 'online';
+
+interface RoomInfo {
+  name: string;
+  room: string;
+  bots: BotArchetypeId[];
+  mode: RoomMode;
+}
+
+function createGuestAuthToken(): string {
+  if (!canUseWindow) return `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+
+  return `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getOrCreateGuestAuthToken(): string {
+  if (!canUseWindow) return createGuestAuthToken();
+
+  const existing = window.localStorage.getItem(GUEST_AUTH_TOKEN_KEY);
+  if (existing) return existing;
+
+  const next = createGuestAuthToken();
+  window.localStorage.setItem(GUEST_AUTH_TOKEN_KEY, next);
+  return next;
+}
+
+function isBotArchetypeId(value: string): value is BotArchetypeId {
+  return value === 'novice'
+    || value === 'average'
+    || value === 'gambler'
+    || value === 'calculator'
+    || value === 'empath'
+    || value === 'bully'
+    || value === 'grandmaster'
+    || value === 'shark';
 }
 
 function createTodaySeed(): string {
@@ -221,7 +265,7 @@ function buildInsights(actionLog: ActionLogEntry[], localPlayerId: string): Insi
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [localPlayerId] = useState<string>('p_1'); // Default to Player 1
+  const [localPlayerId, setLocalPlayerId] = useState<string>('p_1');
   const [showTutorial, setShowTutorial] = useState<boolean>(() => {
     if (!canUseWindow) return true;
     return window.localStorage.getItem('nt_tutorial_seen') !== '1';
@@ -238,13 +282,22 @@ const App: React.FC = () => {
   const [isBotThinking, setIsBotThinking] = useState<boolean>(false);
   const [turnPulseKey, setTurnPulseKey] = useState<number>(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(false);
-  const [roomInfo, setRoomInfo] = useState<{name: string, room: string, bots: BotArchetypeId[]} | null>(null);
+  const [roomInfo, setRoomInfo] = useState<RoomInfo | null>(null);
+  const [onlineStatus, setOnlineStatus] = useState<string>('Idle');
+  const [onlineError, setOnlineError] = useState<string>('');
+  const [isOnlineConnecting, setIsOnlineConnecting] = useState<boolean>(false);
+  const [isOnlineHost, setIsOnlineHost] = useState<boolean>(false);
+  const [onlineRole, setOnlineRole] = useState<OnlineRole>('player');
+  const [spectators, setSpectators] = useState<SpectatorInfo[]>([]);
   const previousStateRef = useRef<GameState | null>(null);
   const hapticsStatusTimeoutRef = useRef<number | null>(null);
   const mistakeHintTimeoutRef = useRef<number | null>(null);
   const recordedGameIdRef = useRef<string | null>(null);
+  const multiplayerClientRef = useRef<MultiplayerClient | null>(null);
+  const guestAuthTokenRef = useRef<string>(getOrCreateGuestAuthToken());
 
   // Manage Document Title
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (gameState && roomInfo?.room) {
       document.title = `No Thanks! [${roomInfo.room}]`;
@@ -324,6 +377,78 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const disconnectMultiplayer = useCallback((nextStatus?: string) => {
+    if (multiplayerClientRef.current) {
+      multiplayerClientRef.current.disconnect();
+      multiplayerClientRef.current = null;
+    }
+
+    if (nextStatus) {
+      setOnlineStatus(nextStatus);
+    }
+
+    setIsOnlineConnecting(false);
+    setIsOnlineHost(false);
+    setOnlineRole('player');
+    setSpectators([]);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (multiplayerClientRef.current) {
+        multiplayerClientRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleMultiplayerMessage = useCallback((message: MultiplayerMessage) => {
+    if (message.type === 'error') {
+      setOnlineError(message.message);
+      return;
+    }
+
+    if (message.type === 'joined') {
+      setOnlineStatus(`Connected to room ${message.roomCode}.`);
+      setOnlineError('');
+      setIsOnlineConnecting(false);
+      setOnlineRole(message.role);
+      setLocalPlayerId(message.playerId || '');
+      setIsOnlineHost(message.hostPlayerId === message.playerId);
+      setRoomInfo(previous => {
+        if (!previous || previous.mode !== 'online') return previous;
+        return {
+          ...previous,
+          bots: message.botIds.filter(isBotArchetypeId),
+        };
+      });
+      return;
+    }
+
+    if (message.type === 'room_state') {
+      setGameState(message.gameState);
+      setOnlineRole(message.yourRole);
+      setLocalPlayerId(message.yourPlayerId || '');
+      setIsOnlineHost(message.hostPlayerId === message.yourPlayerId);
+      setSpectators(message.spectators || []);
+      setRoomInfo(previous => {
+        if (!previous || previous.mode !== 'online') return previous;
+        return {
+          ...previous,
+          bots: message.botIds.filter(isBotArchetypeId),
+        };
+      });
+      setOnlineError('');
+      setOnlineStatus(
+        message.gameState.status === 'waiting'
+          ? 'Waiting for players to join.'
+          : message.gameState.status === 'playing'
+            ? `Match in progress. Spectators: ${message.spectators?.length ?? 0}`
+            : 'Match complete.'
+      );
+      return;
+    }
+  }, []);
+
   useEffect(() => {
     const syncHapticsSupport = () => {
       const supported = feedbackEngine.supportsHaptics();
@@ -359,7 +484,9 @@ const App: React.FC = () => {
 
       if (previousState.status === 'waiting' && gameState.status === 'playing') {
         feedbackEngine.play('game-start', soundEnabled);
-        setTurnPulseKey(value => value + 1);
+        queueMicrotask(() => {
+          setTurnPulseKey(value => value + 1);
+        });
       }
 
       if (gameState.status === 'finished' && previousState.status !== 'finished') {
@@ -370,7 +497,9 @@ const App: React.FC = () => {
       if (gameState.status === 'playing' && previousTurnPlayerId !== nextTurnPlayerId) {
         feedbackEngine.play('turn-change', soundEnabled);
         feedbackEngine.vibrate('turn-change', hapticsEnabled);
-        setTurnPulseKey(value => value + 1);
+        queueMicrotask(() => {
+          setTurnPulseKey(value => value + 1);
+        });
       }
 
       if (previousState.status === 'playing' && gameState.status === 'playing') {
@@ -418,34 +547,92 @@ const App: React.FC = () => {
 
     previousStateRef.current = gameState;
   }, [gameState, hapticsEnabled, soundEnabled]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Initialize Game when Lobby submits
-  const handleJoinGame = (playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
-    // Create the room in a "waiting" state
+  const handleStartLocalGame = (playerName: string, roomCode: string, bots: BotArchetypeId[]) => {
+    disconnectMultiplayer('Offline mode');
+
     const initial = createInitialGameState([playerName], bots);
     setGameState(initial);
-    setRoomInfo({ name: playerName, room: roomCode, bots });
+    setRoomInfo({ name: playerName, room: roomCode, bots, mode: 'local' });
+    setLocalPlayerId('p_1');
+    setOnlineRole('player');
+    setSpectators([]);
     setActionLog([]);
     setMistakeHint('');
+    setOnlineError('');
     recordedGameIdRef.current = null;
   };
 
+  const handleJoinOnlineGame = useCallback((playerName: string, roomCode: string, rolePreference: OnlineRole, botIds: BotArchetypeId[]) => {
+    disconnectMultiplayer();
+    setOnlineError('');
+    setIsOnlineConnecting(true);
+    setOnlineStatus('Connecting to room server...');
+    setIsBotThinking(false);
+    setOnlineRole(rolePreference);
+    setSpectators([]);
+    setGameState(null);
+    setActionLog([]);
+    setMistakeHint('');
+    setRoomInfo({ name: playerName, room: roomCode, bots: botIds, mode: 'online' });
+    recordedGameIdRef.current = null;
+
+    const client = new MultiplayerClient();
+    multiplayerClientRef.current = client;
+
+    client.connect({
+      playerName,
+      roomCode,
+      authToken: guestAuthTokenRef.current,
+      rolePreference,
+      botIds,
+      onOpen: () => {
+        setOnlineStatus('Connected. Joining room...');
+      },
+      onMessage: handleMultiplayerMessage,
+      onClose: () => {
+        setIsOnlineConnecting(false);
+        setOnlineStatus('Disconnected from room server.');
+      },
+      onError: () => {
+        setIsOnlineConnecting(false);
+        setOnlineStatus('Unable to reach room server.');
+        setOnlineError('Connection failed. Make sure multiplayer server is running and reachable.');
+      },
+    });
+  }, [disconnectMultiplayer, handleMultiplayerMessage]);
+
   const handleStartGame = useCallback(() => {
+    if (roomInfo?.mode === 'online') {
+      multiplayerClientRef.current?.startGame();
+      return;
+    }
+
     feedbackEngine.vibrate('game-start', hapticsEnabled && hapticsSupported);
 
     setGameState(prev => {
       if (!prev) return prev;
       return startGame(prev);
     });
-  }, [hapticsEnabled, hapticsSupported]);
+  }, [hapticsEnabled, hapticsSupported, roomInfo?.mode]);
 
   // Handle Player/Bot Actions
   const handleAction = useCallback((action: BotAction) => {
+    if (roomInfo?.mode === 'online') {
+      if (onlineRole === 'spectator') {
+        setOnlineError('You are spectating this match. Join as player before start to play.');
+        return;
+      }
+      multiplayerClientRef.current?.sendAction(action);
+      return;
+    }
+
     setGameState(prev => {
       if (!prev) return prev;
       return processAction(prev, prev.players[prev.currentPlayerIndex].id, action);
     });
-  }, []);
+  }, [onlineRole, roomInfo?.mode]);
 
   const handleLocalAction = useCallback((action: BotAction) => {
     if (gameState) {
@@ -487,6 +674,7 @@ const App: React.FC = () => {
     window.localStorage.setItem('nt_tutorial_seen', '1');
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!gameState || gameState.status !== 'finished') return;
     if (recordedGameIdRef.current === gameState.id) return;
@@ -501,36 +689,44 @@ const App: React.FC = () => {
     const didWin = scoredPlayers[0]?.playerId === localPlayerId;
     const todaySeed = createTodaySeed();
 
-    setProfileStats(previous => {
-      const daily = previous.daily.seed === todaySeed
-        ? previous.daily
-        : { seed: todaySeed, attempts: 0, bestScore: null as number | null };
+    queueMicrotask(() => {
+      setProfileStats(previous => {
+        const daily = previous.daily.seed === todaySeed
+          ? previous.daily
+          : { seed: todaySeed, attempts: 0, bestScore: null as number | null };
 
-      return {
-        gamesPlayed: previous.gamesPlayed + 1,
-        wins: previous.wins + (didWin ? 1 : 0),
-        streak: didWin ? previous.streak + 1 : 0,
-        bestScore: previous.bestScore == null ? localResult.score : Math.min(previous.bestScore, localResult.score),
-        daily: {
-          seed: todaySeed,
-          attempts: daily.attempts + 1,
-          bestScore: daily.bestScore == null ? localResult.score : Math.min(daily.bestScore, localResult.score),
-        },
-      };
+        return {
+          gamesPlayed: previous.gamesPlayed + 1,
+          wins: previous.wins + (didWin ? 1 : 0),
+          streak: didWin ? previous.streak + 1 : 0,
+          bestScore: previous.bestScore == null ? localResult.score : Math.min(previous.bestScore, localResult.score),
+          daily: {
+            seed: todaySeed,
+            attempts: daily.attempts + 1,
+            bestScore: daily.bestScore == null ? localResult.score : Math.min(daily.bestScore, localResult.score),
+          },
+        };
+      });
     });
 
     recordedGameIdRef.current = gameState.id;
   }, [gameState, localPlayerId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Bot Turn Loop
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    if (roomInfo?.mode === 'online') return;
+
     if (!gameState || gameState.status !== 'playing') return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     
     // Is it a bot's turn?
     if (currentPlayer.isBot) {
-      setIsBotThinking(true);
+      queueMicrotask(() => {
+        setIsBotThinking(true);
+      });
 
       // Simulate thinking time (500ms - 1500ms)
       const thinkingTime = 500 + Math.random() * 1000;
@@ -547,11 +743,31 @@ const App: React.FC = () => {
       };
     }
 
-    setIsBotThinking(false);
-  }, [gameState, handleAction]);
+    queueMicrotask(() => {
+      setIsBotThinking(false);
+    });
+  }, [gameState, handleAction, roomInfo?.mode]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const handleReturnToLobby = useCallback(() => {
+    if (roomInfo?.mode === 'online') {
+      disconnectMultiplayer('Disconnected');
+    }
+
+    setGameState(null);
+    setMistakeHint('');
+  }, [disconnectMultiplayer, roomInfo?.mode]);
 
   if (!gameState) {
-    return <Lobby onJoinGame={handleJoinGame} />;
+    return (
+      <Lobby
+        onStartLocalGame={handleStartLocalGame}
+        onJoinOnlineGame={handleJoinOnlineGame}
+        onlineStatus={onlineStatus}
+        onlineError={onlineError}
+        isOnlineConnecting={isOnlineConnecting}
+      />
+    );
   }
 
   const endGameInsights = buildInsights(actionLog, localPlayerId);
@@ -577,13 +793,20 @@ const App: React.FC = () => {
         turnPulseKey={turnPulseKey}
         prefersReducedMotion={prefersReducedMotion}
         roomCode={roomInfo?.room}
+        isOnlineRoom={roomInfo?.mode === 'online'}
+        isOnlineHost={isOnlineHost}
+        onlineStatus={onlineStatus}
+        isSpectator={roomInfo?.mode === 'online' && onlineRole === 'spectator'}
+        spectators={spectators}
       />
 
-      <TutorialOverlay
-        isOpen={showTutorial}
-        onClose={handleCloseTutorial}
-        onComplete={handleCompleteTutorial}
-      />
+      {showTutorial && (
+        <TutorialOverlay
+          isOpen={showTutorial}
+          onClose={handleCloseTutorial}
+          onComplete={handleCompleteTutorial}
+        />
+      )}
       
       {/* Game Over Screen Overlay */}
       {gameState.status === 'finished' && (
@@ -643,17 +866,19 @@ const App: React.FC = () => {
 
             <button 
               onClick={() => {
-                if (roomInfo) {
-                   handleJoinGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                if (roomInfo?.mode === 'local') {
+                  handleStartLocalGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                } else {
+                  handleReturnToLobby();
                 }
               }}
               className="w-full bg-[#400000] hover:bg-[#680000] text-white font-black tracking-wide py-4 rounded-xl text-xl transition-colors mb-3 shadow-lg"
             >
-              PLAY AGAIN
+              {roomInfo?.mode === 'local' ? 'PLAY AGAIN' : 'RETURN TO LOBBY'}
             </button>
             
             <button 
-              onClick={() => setGameState(null)}
+              onClick={handleReturnToLobby}
               className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl text-lg transition-colors"
             >
               Return to Lobby
