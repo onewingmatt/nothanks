@@ -11,6 +11,18 @@ interface GameBoardProps {
   onStartGame: () => void;
   hideChips: boolean;
   onToggleHideChips: () => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+  hapticsEnabled: boolean;
+  onToggleHaptics: () => void;
+  onTestHaptics: () => void;
+  onOpenTutorial: () => void;
+  mistakeHint: string;
+  hapticsSupported: boolean;
+  hapticsStatus: string;
+  isBotThinking: boolean;
+  turnPulseKey: number;
+  prefersReducedMotion: boolean;
   roomCode?: string;
 }
 
@@ -21,14 +33,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onStartGame,
   hideChips,
   onToggleHideChips,
+  soundEnabled,
+  onToggleSound,
+  hapticsEnabled,
+  onToggleHaptics,
+  onTestHaptics,
+  onOpenTutorial,
+  mistakeHint,
+  hapticsSupported,
+  hapticsStatus,
+  isBotThinking,
+  turnPulseKey,
+  prefersReducedMotion,
   roomCode
 }) => {
   const localPlayer = gameState.players.find(p => p.id === localPlayerId);
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isLocalTurn = gameState.players[gameState.currentPlayerIndex]?.id === localPlayerId;
   const canPass = localPlayer && localPlayer.chips > 0;
   const isWaiting = gameState.status === 'waiting';
 
   const currentCardColor = gameState.currentCard ? getCardColor(gameState.currentCard.value) : '#400000';
+  const turnLabel = isWaiting
+    ? 'Waiting for start'
+    : isLocalTurn
+      ? 'Your turn'
+      : currentPlayer?.isBot
+        ? `${currentPlayer.name} is thinking`
+        : `${currentPlayer.name}'s turn`;
 
   return (
     // Use h-[100dvh] instead of h-screen to properly fit mobile browsers with dynamic address bars
@@ -52,6 +84,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({
              <span className="text-[8px] md:text-[10px] font-semibold text-slate-400 uppercase tracking-wider leading-none">Remaining</span>
              <span className="text-base md:text-lg font-bold leading-tight">{gameState.deck.length}</span>
           </div>
+          <button
+            onClick={onToggleSound}
+            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${soundEnabled ? 'bg-emerald-900/50 border-emerald-700 text-emerald-100 hover:bg-emerald-900/70' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+            aria-pressed={soundEnabled}
+          >
+            SFX {soundEnabled ? 'On' : 'Off'}
+          </button>
+          <button
+            onClick={onToggleHaptics}
+            disabled={!hapticsSupported}
+            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${hapticsSupported ? (hapticsEnabled ? 'bg-indigo-900/50 border-indigo-700 text-indigo-100 hover:bg-indigo-900/70' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700') : 'bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed'}`}
+            aria-pressed={hapticsEnabled}
+            title={hapticsSupported ? 'Toggle haptics' : 'This browser does not support vibration haptics'}
+          >
+            {hapticsSupported ? `Haptics ${hapticsEnabled ? 'On' : 'Off'}` : 'No Haptics'}
+          </button>
+          <button
+            onClick={onTestHaptics}
+            disabled={!hapticsSupported || !hapticsEnabled}
+            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${hapticsSupported && hapticsEnabled ? 'bg-cyan-900/50 border-cyan-700 text-cyan-100 hover:bg-cyan-900/70' : 'bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed'}`}
+            title={hapticsSupported ? 'Play a strong haptics test pulse' : 'Haptics are not supported on this device'}
+          >
+            Test Buzz
+          </button>
+          <button
+            onClick={onOpenTutorial}
+            className="px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm bg-amber-900/40 border-amber-700 text-amber-100 hover:bg-amber-900/65"
+            title="Open quick guide"
+          >
+            Guide
+          </button>
           <button 
             onClick={onToggleHideChips}
             className="bg-[#1a1c1c] hover:bg-black px-2.5 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border border-slate-700 text-slate-300 shadow-sm"
@@ -60,6 +123,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </button>
         </div>
       </header>
+
+      {hapticsStatus && (
+        <div className="flex-none bg-cyan-50 border-b border-cyan-200 text-cyan-900 text-[10px] md:text-xs font-semibold px-3 py-1 text-center">
+          {hapticsStatus}
+        </div>
+      )}
       
       {/* Mobile Room Code Strip */}
       {/* Reduced mobile height from 28px to 24px */}
@@ -87,6 +156,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                    player={player} 
                    isCurrentTurn={!isWaiting && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
                    hideChips={hideChips}
+                   isBotThinking={isBotThinking && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
                  />
              </div>
            ))}
@@ -132,13 +202,35 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </h2>
               </div>
 
+              {mistakeHint && (
+                <div className="mb-3 md:mb-4 w-full max-w-xl rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 text-xs md:text-sm font-semibold shadow-sm">
+                  {mistakeHint}
+                </div>
+              )}
+
+              <div
+                key={turnPulseKey}
+                className={`mb-4 md:mb-6 px-4 py-1.5 rounded-full border font-bold text-[11px] md:text-sm tracking-wider uppercase bg-white/80 backdrop-blur-sm shadow-sm z-10 ${isLocalTurn ? 'text-[#1b5e20] border-[#1b5e20]/30' : 'text-slate-700 border-slate-300'} ${prefersReducedMotion ? '' : 'turn-banner-enter'}`}
+              >
+                {turnLabel}
+                {!isLocalTurn && isBotThinking && (
+                  <span className="inline-flex items-center gap-1 ml-2">
+                    <span className="thinking-dot" />
+                    <span className="thinking-dot" style={{ animationDelay: '100ms' }} />
+                    <span className="thinking-dot" style={{ animationDelay: '200ms' }} />
+                  </span>
+                )}
+              </div>
+
               {/* CARD CONTAINER - strictly sized, smaller on mobile */}
               {/* Reduced mobile height from 196px to 168px */}
               <div className="relative group perspective-1000 w-[120px] h-[168px] md:w-[180px] md:h-[252px] z-10 flex-shrink-0">
-                <div className={`
+                <div
+                key={gameState.currentCard?.value ?? 'no-card'}
+                className={`
                   absolute inset-0 bg-[#f9f9f9] rounded-[12px] md:rounded-[20px] shadow-[0_12px_24px_-8px_rgba(0,0,0,0.25)] border border-white
                   flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
-                  ${gameState.currentCard ? 'scale-100 rotate-y-0' : 'scale-95 rotate-y-180 opacity-0'}
+                  ${gameState.currentCard ? 'scale-100 rotate-y-0 card-deal-in' : 'scale-95 rotate-y-180 opacity-0'}
                 `}
                 style={{
                   backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.03%22/%3E%3C/svg%3E")',
@@ -174,15 +266,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 {/* Chips on Card */}
                 {gameState.currentCard && gameState.chipsOnCurrentCard > 0 && (
                   <div className="absolute -bottom-3 -right-3 md:-bottom-6 md:-right-6 z-20 pointer-events-none">
-                    <div className="relative">
+                    <div key={gameState.chipsOnCurrentCard} className="relative chip-stack-pop">
                       {Array.from({ length: Math.min(gameState.chipsOnCurrentCard, 20) }).map((_, i) => (
                         <div 
                           key={i}
                           className="absolute w-7 h-7 md:w-10 md:h-10 bg-gradient-to-br from-[#e17c5a] to-[#b52518] rounded-full shadow-[0_3px_5px_rgba(0,0,0,0.3)] border border-[#ffb4a8]/30"
                           style={{
-                            top: `${(i % 5) * -1.5 + Math.random() * 3}px`,
-                            left: `${(i % 4) * -1.5 + Math.random() * 3}px`,
-                            transform: `rotate(${Math.random() * 360}deg)`,
+                            top: `${(i % 5) * -1.4 + ((i * 11) % 3) - 1}px`,
+                            left: `${(i % 4) * -1.4 + ((i * 7) % 3) - 1}px`,
+                            transform: `rotate(${(i * 37) % 360}deg)`,
                             zIndex: i
                           }}
                         >

@@ -7,3 +7,81 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+@keyframes cardDealIn {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes chipStackPop {
+  0% {
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes turnBannerEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes thinkingPulse {
+  0% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+}
+
+.card-deal-in {
+  animation: cardDealIn 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chip-stack-pop {
+  animation: chipStackPop 260ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.turn-banner-enter {
+  animation: turnBannerEnter 220ms ease-out;
+}
+
+.thinking-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  display: inline-block;
+  animation: thinkingPulse 700ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-deal-in,
+  .chip-stack-pop,
+  .turn-banner-enter,
+  .thinking-dot {
+    animation: none !important;
+  }
+}
