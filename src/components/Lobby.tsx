@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   buildRoomInvite,
-  getMultiplayerEndpointLabel,
-  isStandaloneDisplayMode,
   readRoomInviteFromLocation,
 } from '../config/runtime';
 import { BOT_ARCHETYPES } from '../game/models';
@@ -99,8 +97,6 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   const playerCountLabel = useMemo(() => `${selectedBots.length + 1} total players`, [selectedBots.length]);
   const launchInvite = useMemo(() => readRoomInviteFromLocation(), []);
-  const multiplayerEndpointLabel = useMemo(() => getMultiplayerEndpointLabel(), []);
-  const isStandalone = useMemo(() => isStandaloneDisplayMode(), []);
   const roomInviteUrl = useMemo(
     () => roomCode.trim() ? buildRoomInvite(roomCode, joinAsSpectator ? 'spectator' : 'player') : '',
     [joinAsSpectator, roomCode],
@@ -329,41 +325,26 @@ export const Lobby: React.FC<LobbyProps> = ({
 
               {mode === 'online' ? (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online readiness</div>
-                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Room sync works across all clients. Spectators can join anytime.</div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online room</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Sync code, join players, play live.</div>
 
                   {launchInvite && (
-                    <div className="mt-4 rounded-2xl border border-amber-300/22 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
-                      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-100/80">Invite detected</div>
-                      <div className="mt-1 font-semibold">Room {launchInvite.roomCode} is prefilled for a {launchInvite.rolePreference === 'spectator' ? 'spectator' : 'player'} join.</div>
+                    <div className="mt-3 rounded-2xl border border-amber-300/22 bg-amber-500/10 px-3 py-2 text-sm text-amber-50">
+                      <strong>Invite:</strong> {launchInvite.roomCode} ({launchInvite.rolePreference === 'spectator' ? 'spectator' : 'player'})
                     </div>
                   )}
 
-                  <label className="mt-4 flex items-start gap-3 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-4 py-3 text-sm text-cyan-100/92">
-                    <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
-                    <span>
-                      <span className="block font-bold">Spectator mode</span>
-                      <span className="mt-1 block text-xs leading-5 text-cyan-100/78">Watch now, play later.</span>
-                    </span>
+                  <label className="mt-4 flex items-center gap-2 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-3 py-2 text-sm font-bold text-cyan-100">
+                    <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
+                    Spectator mode
                   </label>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-300/76">Shared endpoint</div>
-                      <div className="mt-2 break-all text-sm font-black text-white">{multiplayerEndpointLabel}</div>
-                      <div className="mt-1 text-xs leading-5 text-slate-300/72">Web, Android, and iOS clients can all connect to this same `/ws` backend.</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-300/76">Native shell</div>
-                        <div className="rounded-full border border-cyan-300/22 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100">{isStandalone ? 'Standalone' : 'Install-ready'}</div>
-                      </div>
-                      <div className="mt-2 break-all text-xs leading-5 text-slate-300/78">{roomInviteUrl || 'Generate a room code to create a deep link that opens directly into this shared room flow.'}</div>
-                    </div>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-slate-300">
+                    Share this room code or invite link with others.
                   </div>
 
-                  {onlineStatus && <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 px-4 py-3 text-sm font-semibold text-cyan-100">Status: {onlineStatus}</div>}
-                  {onlineError && <div className="mt-3 rounded-2xl border border-rose-300/22 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">{onlineError}</div>}
+                  {onlineStatus && <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-500/8 px-3 py-2 text-sm font-semibold text-cyan-100">Status: {onlineStatus}</div>}
+                  {onlineError && <div className="mt-3 rounded-lg border border-rose-300/22 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-100">{onlineError}</div>}
                 </div>
               ) : (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
@@ -376,24 +357,23 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="space-y-5">
               {mode === 'online' ? (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Optional room bots</div>
-                      <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Seat fillers you control</h3>
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Room bots</div>
+                      <div className="mt-1 text-sm text-slate-300">Add bots for empty seats, up to 5.</div>
                     </div>
-                    <div className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100">{selectedOnlineBots.length}/5</div>
+                    <div className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100">{selectedOnlineBots.length}/5</div>
                   </div>
 
-                  <div className="mt-4 flex min-h-[52px] flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {selectedOnlineBots.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-cyan-200/22 bg-black/15 px-4 py-3 text-sm text-cyan-100/78">No bots added yet. Add them only if you want the host room pre-filled.</div>
+                      <span className="text-xs text-slate-400">No bots yet.</span>
                     ) : (
                       selectedOnlineBots.map((botId, index) => {
                         const bot = BOT_ARCHETYPES.find(value => value.id === botId);
                         if (!bot) return null;
-
                         return (
-                          <button key={`${botId}-online-${index}`} type="button" onClick={() => handleRemoveOnlineBot(index)} className="native-online-bot-pill px-3 py-1.5 text-[11px] font-bold" title="Remove bot">
+                          <button key={`${botId}-online-${index}`} type="button" onClick={() => handleRemoveOnlineBot(index)} className="rounded-full border border-white/20 bg-slate-900/80 px-3 py-1 text-xs font-bold text-white">
                             {bot.name} ×
                           </button>
                         );
@@ -401,65 +381,50 @@ export const Lobby: React.FC<LobbyProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     {BOT_ARCHETYPES.map(bot => (
-                      <button key={`online-${bot.id}`} type="button" disabled={selectedOnlineBots.length >= 5} onClick={() => handleAddOnlineBot(bot.id as BotArchetypeId)} className="native-bot-card p-3 text-left disabled:opacity-40 disabled:cursor-not-allowed">
-                        <div className="text-sm font-black text-white">{bot.name}</div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <span className="rounded-full border border-blue-400/22 bg-blue-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-blue-100">Skill {bot.skill}</span>
-                          <span className="rounded-full border border-emerald-400/22 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-100">Aware {bot.awareness}</span>
-                          <span className="rounded-full border border-rose-400/22 bg-rose-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-rose-100">Risk {bot.riskyness}</span>
+                      <button key={`online-${bot.id}`} type="button" disabled={selectedOnlineBots.length >= 5} onClick={() => handleAddOnlineBot(bot.id as BotArchetypeId)} className="rounded-lg border border-white/10 bg-slate-900/70 p-2 text-left text-xs text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                        <div className="font-bold">{bot.name}</div>
+                        <div className="mt-1 flex gap-1 text-[10px] text-slate-300">
+                          <span>S{bot.skill}</span>
+                          <span>A{bot.awareness}</span>
+                          <span>R{bot.riskyness}</span>
                         </div>
-                        <div className="mt-2 text-xs leading-5 text-slate-400">{bot.description}</div>
                       </button>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
-                  <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Selected AI</div>
-                        <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Your roster</h3>
-                      </div>
-                      <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-200">{selectedBots.length}/5</div>
+                <div className="space-y-3">
+                  <div className="native-panel-soft rounded-[24px] p-3 md:p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Selected bots</span>
+                      <span className="text-xs font-black text-slate-300">{selectedBots.length}/5</span>
                     </div>
-
-                    <div className="mt-4 space-y-2 max-h-[360px] overflow-y-auto pr-1">
-                      {selectedBots.length === 0 && (
-                        <div className="rounded-2xl border border-dashed border-white/14 bg-black/15 px-4 py-5 text-center text-sm italic text-slate-400">No bots selected. Start a tight solo session if you want pure one-player play.</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedBots.length === 0 ? (
+                        <span className="text-xs text-slate-400">No bots yet.</span>
+                      ) : (
+                        selectedBots.map((botId, index) => {
+                          const bot = BOT_ARCHETYPES.find(b => b.id === botId);
+                          if (!bot) return null;
+                          return (
+                            <button key={`${botId}-${index}`} type="button" onClick={() => handleRemoveBot(index)} className="rounded-full border border-white/15 bg-slate-900/80 px-3 py-1 text-xs font-bold">
+                              {bot.name} ×
+                            </button>
+                          );
+                        })
                       )}
-                      {selectedBots.map((botId, index) => {
-                        const bot = BOT_ARCHETYPES.find(b => b.id === botId);
-                        if (!bot) return null;
-
-                        return (
-                          <div key={`${botId}-${index}`} className="native-bot-card flex items-start justify-between gap-3 p-3">
-                            <div>
-                              <div className="text-sm font-black text-white">{bot.name}</div>
-                              <div className="mt-1 text-[11px] text-slate-400">S:{bot.skill} · A:{bot.awareness} · R:{bot.riskyness}</div>
-                            </div>
-                            <button type="button" onClick={() => handleRemoveBot(index)} className="native-button-ghost px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em]">Remove</button>
-                          </div>
-                        );
-                      })}
                     </div>
                   </div>
 
-                  <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                    <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Bot archetypes</div>
-                    <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Build your table</h3>
-                    <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-2">
+                  <div className="native-panel-soft rounded-[24px] p-3 md:p-4">
+                    <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Add bots</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
                       {BOT_ARCHETYPES.map(bot => (
-                        <button key={bot.id} type="button" disabled={selectedBots.length >= 5} onClick={() => handleAddBot(bot.id as BotArchetypeId)} className="native-bot-card p-3 text-left disabled:opacity-40 disabled:cursor-not-allowed">
-                          <div className="text-sm font-black text-white">{bot.name}</div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            <span className="rounded-full border border-blue-400/22 bg-blue-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-blue-100">Skill {bot.skill}</span>
-                            <span className="rounded-full border border-emerald-400/22 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-100">Aware {bot.awareness}</span>
-                            <span className="rounded-full border border-rose-400/22 bg-rose-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-rose-100">Risk {bot.riskyness}</span>
-                          </div>
-                          <div className="mt-2 text-xs leading-5 text-slate-400">{bot.description}</div>
+                        <button key={bot.id} type="button" disabled={selectedBots.length >= 5} onClick={() => handleAddBot(bot.id as BotArchetypeId)} className="rounded-lg border border-white/10 bg-slate-900/70 px-2 py-1 text-xs font-black text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                          <div>{bot.name}</div>
+                          <div className="text-[10px] text-slate-300">{bot.skill}/{bot.awareness}/{bot.riskyness}</div>
                         </button>
                       ))}
                     </div>
