@@ -50,24 +50,15 @@ function getProbabilityCardInDeck(targetValue: number, gameState: GameState): nu
 }
 
 /**
- * A bot evaluates whether to take the current card or pass.
- * Skill: 0.0 to 1.0 (Calculates own EV and gap-bridging math perfectly).
- * Awareness: 0.0 to 1.0 (Tracks opponents' chips and predicts opponents' hands perfectly).
- * Risk: 0.0 to 1.0 (Will risk zero chips, will pass perfectly good cards to milk them).
+ * Calculates what the bot thinks the card costs them, based on skill and hand.
  */
-export function evaluateBotDecision(gameState: GameState, botPlayer: Player): BotAction {
-  if (!gameState.currentCard) return 'pass'; // Should not happen during active turn
-  if (botPlayer.chips === 0) return 'take'; // Forced to take
-
-  const cardValue = gameState.currentCard.value;
-  const chipsOnCard = gameState.chipsOnCurrentCard;
-  
-  // Default to 0.5 if not explicitly configured
-  const skill = botPlayer.botConfig?.skill ?? 0.5;
-  const awareness = botPlayer.botConfig?.awareness ?? 0.5;
-  const riskyness = botPlayer.botConfig?.riskyness ?? 0.5;
-
-  // --- BASELINE SKILL EVALUATION (What they think the card costs THEM) ---
+function calculatePerceivedCost(
+  gameState: GameState,
+  botPlayer: Player,
+  cardValue: number,
+  chipsOnCard: number,
+  skill: number
+): number {
   let perceivedCost = cardValue - chipsOnCard;
   
   // SKILL UPGRADE: Look at own hand
@@ -83,65 +74,84 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
       if (botPlayer.chips > 3) perceivedCost -= rawDiscount;
   }
 
-  // --- DECISION PHASE ---
+  return perceivedCost;
+}
 
-  // Scenario A: The card is actually beneficial to take RIGHT NOW (Cost <= 0)
-  if (perceivedCost <= 0) {
-      
-      // If the bot has no risk appetite, take it immediately to be safe.
-      if (riskyness < 0.4) return 'take';
+/**
+ * Logic for when a card is beneficial (Cost <= 0).
+ */
+function evaluateBeneficialCard(
+  gameState: GameState,
+  botPlayer: Player,
+  perceivedCost: number,
+  chipsOnCard: number,
+  awareness: number,
+  riskyness: number
+): BotAction {
+  // If the bot has no risk appetite, take it immediately to be safe.
+  if (riskyness < 0.4) return 'take';
 
-      // If the card is an absolutely massive benefit (e.g. bridging a gap where cost is -21), NEVER risk passing it.
-      if (perceivedCost <= -10) return 'take';
+  // If the card is an absolutely massive benefit (e.g. bridging a gap where cost is -21), NEVER risk passing it.
+  if (perceivedCost <= -10) return 'take';
 
-      // WILL IT COME BACK TO US?
-      // A high-risk bot wants to milk the card for more chips, but only if they think they can get away with it.
-      let safeToPass = true;
-      
-      // AWARENESS: Look at opponents to see if they will steal it
-      if (awareness >= 0.4) {
-        for (const opp of gameState.players) {
-            if (opp.id === botPlayer.id) continue;
-            
-            // AWARENESS UPGRADE: Track opponent chips
-            // True chips +/- random error based on inverse awareness. Awareness 1.0 has 0 error. Awareness 0.4 has +/- 3 error.
-            const errorMargin = Math.max(0, Math.round((1 - awareness) * 5)); 
-            const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
-            
-            if (estimatedChips <= 0) safeToPass = false;
+  // WILL IT COME BACK TO US?
+  // A high-risk bot wants to milk the card for more chips, but only if they think they can get away with it.
+  let safeToPass = true;
 
-            // AWARENESS UPGRADE: Track opponent hands
-            // If awareness is high enough, we literally calculate if the opponent *wants* this card.
-            if (awareness >= 0.7) {
-                const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
-                // If it connects for them perfectly, or if it's generally cheap enough for their stack, they will take it.
-                if (oppCost <= 0) safeToPass = false;
-                
-                // If they are desperate for chips (estimated chips <= 2), they might snap up any low value card.
-                if (estimatedChips <= 2 && oppCost < 10) safeToPass = false;
-            }
+  // AWARENESS: Look at opponents to see if they will steal it
+  if (awareness >= 0.4) {
+    const cardValue = gameState.currentCard!.value;
+    for (const opp of gameState.players) {
+        if (opp.id === botPlayer.id) continue;
+
+        // AWARENESS UPGRADE: Track opponent chips
+        // True chips +/- random error based on inverse awareness. Awareness 1.0 has 0 error. Awareness 0.4 has +/- 3 error.
+        const errorMargin = Math.max(0, Math.round((1 - awareness) * 5));
+        const estimatedChips = Math.max(0, opp.chips + (Math.random() * errorMargin * 2 - errorMargin));
+
+        if (estimatedChips <= 0) safeToPass = false;
+
+        // AWARENESS UPGRADE: Track opponent hands
+        // If awareness is high enough, we literally calculate if the opponent *wants* this card.
+        if (awareness >= 0.7) {
+            const oppCost = calculateActualCost(cardValue, opp.cards, chipsOnCard);
+            // If it connects for them perfectly, or if it's generally cheap enough for their stack, they will take it.
+            if (oppCost <= 0) safeToPass = false;
+
+            // If they are desperate for chips (estimated chips <= 2), they might snap up any low value card.
+            if (estimatedChips <= 2 && oppCost < 10) safeToPass = false;
         }
-      } else {
-        // Low awareness, high risk bots just randomly guess if it's safe because they aren't paying attention.
-        safeToPass = Math.random() > 0.5;
-      }
-
-      if (!safeToPass) return 'take'; // Someone will steal it, grab it now.
-
-      // It looks safe to pass. Will we risk it to get more chips?
-      const riskRoll = Math.random();
-      if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take'; // Unless we are crazy risky, don't pass if we're low on chips
-      
-      if (riskRoll < riskyness) return 'pass'; // Milk it!
-      
-      return 'take';
+    }
+  } else {
+    // Low awareness, high risk bots just randomly guess if it's safe because they aren't paying attention.
+    safeToPass = Math.random() > 0.5;
   }
 
-  // Scenario B: The card is BAD for us (Cost > 0)
-  // We want to pass, but when do we give up and take it?
+  if (!safeToPass) return 'take'; // Someone will steal it, grab it now.
+
+  // It looks safe to pass. Will we risk it to get more chips?
+  const riskRoll = Math.random();
+  if (botPlayer.chips <= 2 && riskyness < 0.9) return 'take'; // Unless we are crazy risky, don't pass if we're low on chips
+
+  if (riskRoll < riskyness) return 'pass'; // Milk it!
+
+  return 'take';
+}
+
+/**
+ * Logic for when a card is bad (Cost > 0).
+ */
+function evaluateBadCard(
+  gameState: GameState,
+  botPlayer: Player,
+  perceivedCost: number,
+  chipsOnCard: number,
+  awareness: number,
+  riskyness: number
+): BotAction {
+  const cardValue = gameState.currentCard!.value;
 
   // 1. Chip Pressure: How desperate are we?
-  // A risk-averse bot panics when chips < 8. A reckless bot panics when chips < 2.
   const panicThreshold = Math.round(8 - (riskyness * 6)); 
   
   let chipDesperation = 0;
@@ -185,4 +195,31 @@ export function evaluateBotDecision(gameState: GameState, botPlayer: Player): Bo
   }
 
   return 'pass';
+}
+
+/**
+ * A bot evaluates whether to take the current card or pass.
+ * Skill: 0.0 to 1.0 (Calculates own EV and gap-bridging math perfectly).
+ * Awareness: 0.0 to 1.0 (Tracks opponents' chips and predicts opponents' hands perfectly).
+ * Risk: 0.0 to 1.0 (Will risk zero chips, will pass perfectly good cards to milk them).
+ */
+export function evaluateBotDecision(gameState: GameState, botPlayer: Player): BotAction {
+  if (!gameState.currentCard) return 'pass'; // Should not happen during active turn
+  if (botPlayer.chips === 0) return 'take'; // Forced to take
+
+  const cardValue = gameState.currentCard.value;
+  const chipsOnCard = gameState.chipsOnCurrentCard;
+
+  // Default to 0.5 if not explicitly configured
+  const skill = botPlayer.botConfig?.skill ?? 0.5;
+  const awareness = botPlayer.botConfig?.awareness ?? 0.5;
+  const riskyness = botPlayer.botConfig?.riskyness ?? 0.5;
+
+  const perceivedCost = calculatePerceivedCost(gameState, botPlayer, cardValue, chipsOnCard, skill);
+
+  if (perceivedCost <= 0) {
+    return evaluateBeneficialCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness);
+  } else {
+    return evaluateBadCard(gameState, botPlayer, perceivedCost, chipsOnCard, awareness, riskyness);
+  }
 }
