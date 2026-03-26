@@ -50,6 +50,7 @@ export const CardGroup: React.FC<CardGroupProps> = ({ cards, isCurrentPlayer }) 
                 `}
                 style={{
                   zIndex: seq.length - i,
+                  backgroundColor: '#ffffff',
                   '--tw-ring-color': cardColor
                 } as React.CSSProperties}
                 title={`Sequence: ${seq.map(sc => sc.value).join(', ')}`}

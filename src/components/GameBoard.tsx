@@ -285,6 +285,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
                   ${gameState.currentCard ? 'scale-100 rotate-y-0 card-deal-in' : 'scale-95 rotate-y-180 opacity-0'}
                 `}
+                style={{ backgroundColor: '#ffffff' }}
                 >
                    {gameState.currentCard && (
                      <>
