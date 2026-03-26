@@ -6,13 +6,46 @@ interface OpponentStripProps {
   player: Player;
   isCurrentTurn: boolean;
   hideChips: boolean;
+  isBotThinking: boolean;
+}
+
+function getBotPersona(player: Player): string | null {
+  if (!player.isBot || !player.botConfig) return null;
+
+  const { skill, awareness, riskyness } = player.botConfig;
+  if (skill >= 0.8 && awareness >= 0.8 && riskyness >= 0.8) return 'Table Shark';
+  if (skill >= 0.8 && awareness >= 0.8) return 'Grand Tactician';
+  if (riskyness >= 0.8) return 'High Roller';
+  if (skill >= 0.8) return 'Cold Calculator';
+  if (awareness >= 0.8) return 'Mind Reader';
+  return 'Balanced Bot';
+}
+
+function getPersonaLine(persona: string | null): string {
+  switch (persona) {
+    case 'Table Shark':
+      return 'Smells value and presses hard.';
+    case 'Grand Tactician':
+      return 'Tracks every edge on board.';
+    case 'High Roller':
+      return 'Leans aggressive for bigger swings.';
+    case 'Cold Calculator':
+      return 'Optimizes raw card math first.';
+    case 'Mind Reader':
+      return 'Watches stacks and pressure points.';
+    default:
+      return 'Plays a balanced risk line.';
+  }
 }
 
 export const OpponentStrip: React.FC<OpponentStripProps> = ({ 
   player, 
   isCurrentTurn, 
-  hideChips 
+  hideChips,
+  isBotThinking
 }) => {
+  const persona = getBotPersona(player);
+
   return (
     <div className={`
       relative flex items-center gap-3 p-2 md:p-3 pr-4 rounded-full border bg-white shadow-sm transition-all duration-300 w-full max-w-[280px]
@@ -33,6 +66,11 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
              <h3 className={`font-bold text-sm md:text-base truncate ${isCurrentTurn ? 'text-[#8E0000]' : 'text-slate-800'}`}>
                {player.name}
              </h3>
+             {persona && (
+               <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                 {persona}
+               </span>
+             )}
              {player.isBot && player.botConfig && (
                 <div className="hidden md:flex gap-1">
                    <span className="text-[8px] bg-slate-200 text-slate-500 px-1 rounded" title="Skill">S:{player.botConfig.skill}</span>
@@ -67,6 +105,14 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
              </div>
           )}
         </div>
+        {isCurrentTurn && isBotThinking && (
+          <div className="mt-1 flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold text-[#8E0000]">
+            <span>{getPersonaLine(persona)}</span>
+            <span className="thinking-dot" />
+            <span className="thinking-dot" style={{ animationDelay: '100ms' }} />
+            <span className="thinking-dot" style={{ animationDelay: '200ms' }} />
+          </div>
+        )}
       </div>
 
       {/* Chips Badge - positioned absolutely on the right edge */}
