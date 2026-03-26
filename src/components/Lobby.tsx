@@ -303,27 +303,25 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
 
               {mode === 'online' ? (
-                <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online room</div>
-                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Sync code, join players, play live.</div>
+                <div className="native-panel-soft rounded-[24px] p-3 md:p-4 space-y-2">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online room</div>
+                    <div className="text-xs text-slate-300/90">Share code or invite link.</div>
+                  </div>
 
                   {launchInvite && (
-                    <div className="mt-3 rounded-2xl border border-amber-300/22 bg-amber-500/10 px-3 py-2 text-sm text-amber-50">
+                    <div className="rounded-2xl border border-amber-300/22 bg-amber-500/10 px-3 py-2 text-xs text-amber-50">
                       <strong>Invite:</strong> {launchInvite.roomCode} ({launchInvite.rolePreference === 'spectator' ? 'spectator' : 'player'})
                     </div>
                   )}
 
-                  <label className="mt-4 flex items-center gap-2 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-3 py-2 text-sm font-bold text-cyan-100">
+                  <label className="flex items-center gap-2 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-3 py-1.5 text-xs font-bold text-cyan-100">
                     <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
                     Spectator mode
                   </label>
 
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-slate-300">
-                    Share this room code or invite link with others.
-                  </div>
-
-                  {onlineStatus && <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-500/8 px-3 py-2 text-sm font-semibold text-cyan-100">Status: {onlineStatus}</div>}
-                  {onlineError && <div className="mt-3 rounded-lg border border-rose-300/22 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-100">{onlineError}</div>}
+                  {onlineStatus && <div className="rounded-lg border border-cyan-300/20 bg-cyan-500/8 px-3 py-1.5 text-xs font-semibold text-cyan-100">Status: {onlineStatus}</div>}
+                  {onlineError && <div className="rounded-lg border border-rose-300/22 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-100">{onlineError}</div>}
                 </div>
               ) : (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
