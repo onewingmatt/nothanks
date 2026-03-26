@@ -473,12 +473,6 @@ const App: React.FC = () => {
     showHapticsStatus(didBuzz ? 'Buzz sent to device.' : 'Buzz blocked by browser/device policy.');
   }, [hapticsEnabled, hapticsSupported, showHapticsStatus]);
 
-  const handleTestHaptics = useCallback(() => {
-    const enabled = hapticsEnabled && hapticsSupported;
-    const didBuzz = feedbackEngine.testHaptics(enabled);
-    showHapticsStatus(didBuzz ? 'Test buzz fired.' : 'No physical buzz. Browser likely blocks vibration.');
-  }, [hapticsEnabled, hapticsSupported, showHapticsStatus]);
-
   const handleOpenTutorial = useCallback(() => {
     setShowTutorial(true);
   }, []);
@@ -575,7 +569,6 @@ const App: React.FC = () => {
         onToggleSound={() => setSoundEnabled(prev => !prev)}
         hapticsEnabled={hapticsEnabled}
         onToggleHaptics={handleToggleHaptics}
-        onTestHaptics={handleTestHaptics}
         onOpenTutorial={handleOpenTutorial}
         mistakeHint={mistakeHint}
         hapticsSupported={hapticsSupported}

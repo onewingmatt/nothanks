@@ -15,7 +15,6 @@ interface GameBoardProps {
   onToggleSound: () => void;
   hapticsEnabled: boolean;
   onToggleHaptics: () => void;
-  onTestHaptics: () => void;
   onOpenTutorial: () => void;
   mistakeHint: string;
   hapticsSupported: boolean;
@@ -37,7 +36,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onToggleSound,
   hapticsEnabled,
   onToggleHaptics,
-  onTestHaptics,
   onOpenTutorial,
   mistakeHint,
   hapticsSupported,
@@ -99,14 +97,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             title={hapticsSupported ? 'Toggle haptics' : 'This browser does not support vibration haptics'}
           >
             {hapticsSupported ? `Haptics ${hapticsEnabled ? 'On' : 'Off'}` : 'No Haptics'}
-          </button>
-          <button
-            onClick={onTestHaptics}
-            disabled={!hapticsSupported || !hapticsEnabled}
-            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${hapticsSupported && hapticsEnabled ? 'bg-cyan-900/50 border-cyan-700 text-cyan-100 hover:bg-cyan-900/70' : 'bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed'}`}
-            title={hapticsSupported ? 'Play a strong haptics test pulse' : 'Haptics are not supported on this device'}
-          >
-            Test Buzz
           </button>
           <button
             onClick={onOpenTutorial}
