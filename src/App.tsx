@@ -23,6 +23,7 @@ const PROFILE_STATS_KEY = 'nt_profile_stats';
 const SEEN_HINTS_KEY = 'nt_seen_mistake_hints';
 const GUEST_AUTH_TOKEN_KEY = 'nt_guest_auth_token';
 const PLAYER_NAME_KEY = 'nt_lobby_player_name';
+const ROOM_CODE_KEY = 'nt_lobby_room_code';
 const QUICK_MATCH_BOTS: BotArchetypeId[] = ['average', 'calculator', 'empath'];
 
 function getStoredToggle(key: string, fallback: boolean): boolean {
@@ -851,6 +852,10 @@ const App: React.FC = () => {
       disconnectMultiplayer('Disconnected');
     } else {
       syncRoomInviteInLocation(null);
+    }
+
+    if (canUseWindow) {
+      window.localStorage.removeItem(ROOM_CODE_KEY);
     }
 
     setGameState(null);
