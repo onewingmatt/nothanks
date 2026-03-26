@@ -1,5 +1,6 @@
 import type { GameState, Player, Card, BotAction, BotArchetypeId } from './models';
 import { BOT_ARCHETYPES } from './models';
+import { getSecureRandomInt } from './cryptoUtils';
 
 const DECK_SIZE = 33; // Cards 3-35
 const MIN_CARD = 3;
@@ -15,7 +16,7 @@ export function createInitialGameState(playerNames: string[], botIds: BotArchety
 
   // Shuffle Deck (Fisher-Yates)
   for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = getSecureRandomInt(i + 1);
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
@@ -72,7 +73,7 @@ export function startGame(gameState: GameState): GameState {
   if (newState.status !== 'waiting') return newState;
 
   newState.status = 'playing';
-  newState.currentPlayerIndex = Math.floor(Math.random() * newState.players.length); // Random start
+  newState.currentPlayerIndex = getSecureRandomInt(newState.players.length); // Random start
   newState.currentCard = newState.deck.pop() || null;
 
   return newState;
