@@ -260,21 +260,18 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
           </section>
 
-          <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            <div className="native-panel native-mini-stat rounded-[24px] p-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/85">Quick Match</div>
-              <div className="mt-2 text-lg font-black text-white">Fast setup</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Room code + start in seconds.</p>
+          <section className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="native-panel native-mini-stat rounded-[20px] p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/85">Quick match</div>
+              <div className="mt-1 text-lg font-black text-white">Fast join</div>
             </div>
-            <div className="native-panel native-mini-stat rounded-[24px] p-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/85">Cross-platform</div>
-              <div className="mt-2 text-lg font-black text-white">One table</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Web, Android, and iOS join same room.</p>
+            <div className="native-panel native-mini-stat rounded-[20px] p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/85">Cross-platform</div>
+              <div className="mt-1 text-lg font-black text-white">Same room</div>
             </div>
-            <div className="native-panel native-mini-stat rounded-[24px] p-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-rose-200/85">Reconnect</div>
-              <div className="mt-2 text-lg font-black text-white">Auto resume</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Drop + reconnect keeps your seat.</p>
+            <div className="native-panel native-mini-stat rounded-[20px] p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-200/85">Reconnect</div>
+              <div className="mt-1 text-lg font-black text-white">Keep seat</div>
             </div>
           </section>
         </div>

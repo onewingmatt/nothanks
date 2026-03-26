@@ -58,21 +58,21 @@ export const HomeHub: React.FC<HomeHubProps> = ({
           </p>
 
           <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <button type="button" onClick={onOpenLobby} className="native-button-primary text-left">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/80">Multiplayer</div>
-              <div className="mt-2 text-lg font-black">Join room</div>
+            <button type="button" onClick={onOpenLobby} className="native-button-primary text-left space-y-1 py-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/80">🏠 Multiplayer</div>
+              <div className="text-lg font-black">Join</div>
             </button>
-            <button type="button" onClick={onQuickSolo} className="native-button-secondary text-left">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Solo</div>
-              <div className="mt-2 text-lg font-black">Quick game</div>
+            <button type="button" onClick={onQuickSolo} className="native-button-secondary text-left space-y-1 py-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">🤖 Solo</div>
+              <div className="text-lg font-black">Play</div>
             </button>
-            <button type="button" onClick={onStartDaily} className="native-button-secondary text-left">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Daily</div>
-              <div className="mt-2 text-lg font-black">Today</div>
+            <button type="button" onClick={onStartDaily} className="native-button-secondary text-left space-y-1 py-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">📅 Daily</div>
+              <div className="text-lg font-black">Today</div>
             </button>
-            <button type="button" onClick={onOpenTutorial} className="native-button-ghost text-left">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Rules</div>
-              <div className="mt-2 text-lg font-black">Quick guide</div>
+            <button type="button" onClick={onOpenTutorial} className="native-button-ghost text-left space-y-1 py-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">📙 Rules</div>
+              <div className="text-lg font-black">Read</div>
             </button>
           </div>
         </section>
