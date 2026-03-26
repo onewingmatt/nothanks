@@ -43,22 +43,20 @@ export const CardGroup: React.FC<CardGroupProps> = ({ cards, isCurrentPlayer }) 
                 className={`
                   relative flex flex-col items-center justify-center 
                   w-[40px] h-[56px] md:w-[50px] md:h-[70px]
-                  rounded-[4px] bg-white border border-slate-300
-                  shadow-sm overflow-hidden
+                  rounded-[4px] bg-white border border-slate-200
+                  shadow-md overflow-hidden
                   ${i > 0 ? '-ml-5 md:-ml-7' : 'z-10'}
                   ${isCurrentPlayer && i === 0 ? 'ring-2 ring-offset-1' : ''}
                 `}
                 style={{
-                  zIndex: seq.length - i, // Lowest card on top
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.03%22/%3E%3C/svg%3E")',
-                  // Use the card's dynamic color for the active ring if applicable
+                  zIndex: seq.length - i,
                   '--tw-ring-color': cardColor
                 } as React.CSSProperties}
                 title={`Sequence: ${seq.map(sc => sc.value).join(', ')}`}
               >
                 {/* Center Number with dynamic gradient color */}
                 <span 
-                  className={`font-black text-lg md:text-xl drop-shadow-sm ${i > 0 ? 'opacity-40' : 'opacity-90'}`}
+                  className={`font-black text-lg md:text-xl ${i > 0 ? 'opacity-40' : 'opacity-90'}`}
                   style={{ color: cardColor }}
                 >
                   {c.value}

@@ -171,7 +171,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      <main className="relative z-10 flex-1 flex flex-col md:flex-row overflow-hidden bg-[radial-gradient(circle_at_38%_42%,rgba(255,255,255,0.1),transparent_45%),linear-gradient(180deg,rgba(9,16,28,0.92),rgba(12,21,35,0.96))]">
+      <main className="relative z-10 flex-1 flex flex-col md:flex-row overflow-hidden">
         <section className={`
            native-panel-soft flex-none w-full md:w-[330px]
            flex flex-row md:flex-col gap-3 p-3 md:p-5
@@ -192,7 +192,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </section>
 
         <section className="flex-1 flex flex-col items-center justify-center p-3 md:p-8 relative overflow-hidden min-h-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.18),rgba(255,255,255,0.02)_42%,transparent_70%)] pointer-events-none" />
 
           {isWaiting ? (
             <div className="z-10 native-panel-soft flex flex-col items-center text-center p-5 md:p-7 overflow-y-auto max-h-full rounded-[26px] border border-slate-400/24 shadow-2xl w-full max-w-2xl">
@@ -286,15 +285,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
                   ${gameState.currentCard ? 'scale-100 rotate-y-0 card-deal-in' : 'scale-95 rotate-y-180 opacity-0'}
                 `}
-                style={{
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.03%22/%3E%3C/svg%3E")',
-                }}
                 >
                    {gameState.currentCard && (
                      <>
-                       {/* Center Number with dynamic gradient color */}
+                       {/* Center Number */}
                        <span 
-                          className="text-[60px] md:text-[90px] font-black leading-none tracking-tighter mix-blend-multiply opacity-95 drop-shadow-sm"
+                          className="text-[60px] md:text-[90px] font-black leading-none tracking-tighter"
                           style={{ color: currentCardColor }}
                        >
                          {gameState.currentCard.value}
@@ -304,14 +300,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                           className="absolute top-2 left-3 md:top-3 md:left-4 flex flex-col items-center"
                           style={{ color: currentCardColor }}
                        >
-                         <span className="text-base md:text-lg font-black opacity-90 drop-shadow-sm">{gameState.currentCard.value}</span>
+                         <span className="text-base md:text-lg font-black opacity-90">{gameState.currentCard.value}</span>
                        </div>
                        {/* Bottom Right Mini Number (Inverted) */}
                        <div 
                           className="absolute bottom-2 right-3 md:bottom-3 md:right-4 flex flex-col items-center rotate-180"
                           style={{ color: currentCardColor }}
                        >
-                         <span className="text-base md:text-lg font-black opacity-90 drop-shadow-sm">{gameState.currentCard.value}</span>
+                         <span className="text-base md:text-lg font-black opacity-90">{gameState.currentCard.value}</span>
                        </div>
                      </>
                    )}

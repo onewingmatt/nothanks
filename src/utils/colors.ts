@@ -17,9 +17,9 @@ export function getCardColor(value: number): string {
   
   const hue = startHue + pct * (endHue - startHue);
   
-  // Dark, authoritative jewel tones
-  const sat = 85; 
-  const light = 25; 
+  // Dark, authoritative jewel tones — slightly lighter for white card backgrounds
+  const sat = 82; 
+  const light = 32; 
 
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
