@@ -854,6 +854,7 @@ const App: React.FC = () => {
     }
 
     setGameState(null);
+    setRoomInfo(null);
     setMistakeHint('');
     setShellScreen('play');
   }, [disconnectMultiplayer, roomInfo?.mode]);
