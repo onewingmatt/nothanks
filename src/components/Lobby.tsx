@@ -217,11 +217,11 @@ export const Lobby: React.FC<LobbyProps> = ({
     onStartLocalGame(playerName.trim(), localCode.toUpperCase(), selectedBots);
   };
 
-  const surfaceTitle = mode === 'online' ? 'Bring friends to the table' : 'Set up a premium solo session';
+  const surfaceTitle = mode === 'online' ? 'Online room' : 'Solo session';
 
   const surfaceCopy = mode === 'online'
-    ? 'Create or join a shared room with reconnect-ready seats, spectator support, and optional AI fillers.'
-    : 'Choose your bot lineup and start a focused local match with the same tactile presentation as online play.';
+    ? 'Share code, join, and play.'
+    : 'Pick bots and start fast.';
 
   return (
     <div className="native-shell min-h-screen overflow-hidden px-4 py-5 text-white md:px-6 md:py-6">
@@ -260,21 +260,21 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             <div className="native-panel native-mini-stat rounded-[24px] p-4">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/85">Quick Match</div>
               <div className="mt-2 text-lg font-black text-white">Fast setup</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Create a room, share a short code, and fill empty seats with bots only when you want them.</p>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Room code + start in seconds.</p>
             </div>
             <div className="native-panel native-mini-stat rounded-[24px] p-4">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/85">Cross-platform</div>
-              <div className="mt-2 text-lg font-black text-white">One shared table</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Web, Android, and iOS clients can join the same room code flow with the same live game state.</p>
+              <div className="mt-2 text-lg font-black text-white">One table</div>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Web, Android, and iOS join same room.</p>
             </div>
             <div className="native-panel native-mini-stat rounded-[24px] p-4">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-rose-200/85">Confidence</div>
-              <div className="mt-2 text-lg font-black text-white">Reconnect-safe</div>
-              <p className="mt-2 text-sm leading-5 text-slate-300/85">Persistent guest identity reclaims your seat automatically instead of treating reconnect like a fresh session.</p>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-rose-200/85">Reconnect</div>
+              <div className="mt-2 text-lg font-black text-white">Auto resume</div>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Drop + reconnect keeps your seat.</p>
             </div>
           </section>
         </div>
@@ -283,15 +283,13 @@ export const Lobby: React.FC<LobbyProps> = ({
           <form onSubmit={mode === 'online' ? handleJoinOnline : handleStartLocal} className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
             <div className="space-y-5">
               <div>
-                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-300/80">Play style</div>
+                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-300/80">Mode</div>
                 <div className="grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-1.5">
                   <button type="button" onClick={() => setMode('online')} className={`native-tab text-left ${mode === 'online' ? 'native-tab-active' : ''}`}>
-                    <div className="text-sm font-black">Online Multiplayer</div>
-                    <div className="mt-1 text-[11px] text-slate-300/75">Shared rooms, spectators, reconnect</div>
+                    <div className="text-sm font-black">Online</div>
                   </button>
                   <button type="button" onClick={() => setMode('local')} className={`native-tab text-left ${mode === 'local' ? 'native-tab-active' : ''}`}>
-                    <div className="text-sm font-black">Local vs AI</div>
-                    <div className="mt-1 text-[11px] text-slate-300/75">Solo session with a custom roster</div>
+                    <div className="text-sm font-black">Local</div>
                   </button>
                 </div>
               </div>
@@ -335,7 +333,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               {mode === 'online' ? (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
                   <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online readiness</div>
-                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Live room sync is available across supported clients. Hosts can add bots deliberately, while spectators can join active games without taking a seat.</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Room sync works across all clients. Spectators can join anytime.</div>
 
                   {launchInvite && (
                     <div className="mt-4 rounded-2xl border border-amber-300/22 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
@@ -347,8 +345,8 @@ export const Lobby: React.FC<LobbyProps> = ({
                   <label className="mt-4 flex items-start gap-3 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-4 py-3 text-sm text-cyan-100/92">
                     <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
                     <span>
-                      <span className="block font-bold">Join as spectator</span>
-                      <span className="mt-1 block text-xs leading-5 text-cyan-100/78">Useful for watching an active room or reserving yourself for the next match.</span>
+                      <span className="block font-bold">Spectator mode</span>
+                      <span className="mt-1 block text-xs leading-5 text-cyan-100/78">Watch now, play later.</span>
                     </span>
                   </label>
 
@@ -372,8 +370,8 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               ) : (
                 <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
-                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Solo session summary</div>
-                  <div className="mt-2 text-sm leading-6 text-slate-300/88">{playerCountLabel}. Local mode keeps your preferred AI lineup and drops you straight into a polished table view.</div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Solo session</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-300/88">{playerCountLabel}. Start fast with selected AI bots.</div>
                 </div>
               )}
             </div>

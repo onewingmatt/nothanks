@@ -53,30 +53,26 @@ export const HomeHub: React.FC<HomeHubProps> = ({
           <h1 className="max-w-xl text-4xl font-black tracking-[-0.04em] text-white md:text-6xl">
             NO <span className="text-[#ffb487]">THANKS!</span>
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200/85 md:text-base">
-            The classic card game — play against AI opponents or challenge friends in a live room.
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300/90 md:text-base">
+            Quick turns, easy rules, competitive scoring.
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <button type="button" onClick={onOpenLobby} className="native-button-primary text-left">
-              <div className="text-[11px] font-black uppercase tracking-[0.14em] text-white/76">Multiplayer</div>
-              <div className="mt-2 text-lg font-black">Play with friends</div>
-              <div className="mt-1 text-xs leading-5 text-white/78">Create a room and invite others to join.</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/80">Multiplayer</div>
+              <div className="mt-2 text-lg font-black">Join room</div>
             </button>
             <button type="button" onClick={onQuickSolo} className="native-button-secondary text-left">
-              <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-200/76">Solo</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Solo</div>
               <div className="mt-2 text-lg font-black">Quick game</div>
-              <div className="mt-1 text-xs leading-5 text-slate-200/78">Jump straight in against AI opponents.</div>
             </button>
             <button type="button" onClick={onStartDaily} className="native-button-secondary text-left">
-              <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-200/76">Daily</div>
-              <div className="mt-2 text-lg font-black">Today&apos;s challenge</div>
-              <div className="mt-1 text-xs leading-5 text-slate-200/78">A fresh puzzle every day. Beat your best score.</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Daily</div>
+              <div className="mt-2 text-lg font-black">Today</div>
             </button>
             <button type="button" onClick={onOpenTutorial} className="native-button-ghost text-left">
-              <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-200/76">Rules</div>
-              <div className="mt-2 text-lg font-black">How to play</div>
-              <div className="mt-1 text-xs leading-5 text-slate-200/78">Learn the rules in under two minutes.</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-200/80">Rules</div>
+              <div className="mt-2 text-lg font-black">Quick guide</div>
             </button>
           </div>
         </section>
