@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   buildRoomInvite,
   getMultiplayerEndpointLabel,
-  isStandaloneDisplayMode,
   readRoomInviteFromLocation,
   syncRoomInviteInLocation,
 } from './config/runtime';
@@ -355,7 +354,6 @@ const App: React.FC = () => {
   const dailySeed = profileStats.daily.seed;
   const dailyLineup = useMemo(() => buildDailyBotLineup(dailySeed), [dailySeed]);
   const dailyLineupLabels = useMemo(() => dailyLineup.map(botId => BOT_ARCHETYPES.find(bot => bot.id === botId)?.name || botId), [dailyLineup]);
-  const installReady = isStandaloneDisplayMode();
 
   // Manage Document Title
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -878,10 +876,7 @@ const App: React.FC = () => {
       <>
         {shellScreen === 'home' ? (
           <HomeHub
-            dailySeed={dailySeed}
             dailyLineupLabels={dailyLineupLabels}
-            endpointLabel={getMultiplayerEndpointLabel()}
-            installReady={installReady}
             soundEnabled={soundEnabled}
             hapticsEnabled={hapticsEnabled}
             hapticsSupported={hapticsSupported}
