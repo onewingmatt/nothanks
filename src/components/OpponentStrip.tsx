@@ -90,18 +90,23 @@ export const OpponentStrip: React.FC<OpponentStripProps> = ({
         </div>
 
         {player.isBot && player.botConfig && (
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="rounded-2xl border border-slate-500/25 bg-slate-900/35 px-2 py-1.5">
-              <div className="text-[9px] uppercase tracking-[0.14em] text-slate-400">Skill</div>
-              <div className="mt-0.5 text-xs font-black text-slate-100">{(player.botConfig.skill * 100).toFixed(0)}%</div>
-            </div>
-            <div className="rounded-2xl border border-slate-500/25 bg-slate-900/35 px-2 py-1.5">
-              <div className="text-[9px] uppercase tracking-[0.14em] text-slate-400">Aware</div>
-              <div className="mt-0.5 text-xs font-black text-slate-100">{(player.botConfig.awareness * 100).toFixed(0)}%</div>
-            </div>
-            <div className="rounded-2xl border border-slate-500/25 bg-slate-900/35 px-2 py-1.5">
-              <div className="text-[9px] uppercase tracking-[0.14em] text-slate-400">Risk</div>
-              <div className="mt-0.5 text-xs font-black text-slate-100">{(player.botConfig.riskyness * 100).toFixed(0)}%</div>
+          <div className="relative">
+            <div className="text-[9px] text-slate-400 italic">Hover for AI stats</div>
+            <div className="absolute left-0 top-full mt-1 hidden w-44 rounded-lg border border-slate-700 bg-slate-900/95 p-2 text-xs text-slate-100 shadow-lg group-hover:block z-20">
+              <div className="grid grid-cols-3 gap-1">
+                <div className="text-center">
+                  <div className="text-[8px] uppercase tracking-[0.12em] text-slate-400">Skill</div>
+                  <div className="font-black">{(player.botConfig.skill * 100).toFixed(0)}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[8px] uppercase tracking-[0.12em] text-slate-400">Aware</div>
+                  <div className="font-black">{(player.botConfig.awareness * 100).toFixed(0)}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[8px] uppercase tracking-[0.12em] text-slate-400">Risk</div>
+                  <div className="font-black">{(player.botConfig.riskyness * 100).toFixed(0)}%</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
