@@ -1,6 +1,6 @@
-import { evaluateBotDecision } from './ai';
-import { BOT_ARCHETYPES } from './models';
-import type { GameState, Player, BotArchetypeId } from './models';
+import { evaluateBotDecision } from './ai.ts';
+import { BOT_ARCHETYPES } from './models.ts';
+import type { GameState, Player, BotArchetypeId } from './models.ts';
 
 // Helper to quickly build a player with a specific archetype
 function buildBot(id: BotArchetypeId, chips: number, cards: number[] = []): Player {
