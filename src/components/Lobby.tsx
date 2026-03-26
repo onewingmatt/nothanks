@@ -236,11 +236,6 @@ export const Lobby: React.FC<LobbyProps> = ({
 
         <div className="mb-5 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
           <section className="native-panel-strong native-grid rounded-[28px] p-6 md:p-8">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/25 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/90">
-              <span className="native-chip-dot" />
-              Premium tabletop mobile feel
-            </div>
-
             <h1 className="max-w-xl text-4xl font-black tracking-[-0.04em] text-white md:text-6xl">
               NO <span className="text-[#ffb487]">THANKS!</span>
             </h1>
