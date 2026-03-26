@@ -172,15 +172,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       )}
 
       <main className="relative z-10 flex-1 flex flex-col md:flex-row overflow-hidden">
-        <section className={`
-           native-panel-soft flex-none w-full md:w-[330px]
+          <section className={`
+            native-panel-soft flex-none w-full md:w-[380px]
            flex flex-row md:flex-col gap-3 p-3 md:p-5
            overflow-x-auto md:overflow-y-auto border-b md:border-b-0 md:border-r border-slate-500/25
            scrollbar-thin scrollbar-thumb-slate-500/70 scrollbar-track-transparent items-center md:items-stretch rounded-none
-           ${isWaiting ? 'hidden' : 'h-[114px] md:h-full opacity-100'}
+            ${isWaiting ? 'hidden' : 'h-[164px] md:h-full opacity-100'}
         `}>
            {gameState.players.filter(p => p.id !== localPlayerId).map((player) => (
-             <div key={player.id} className="flex-shrink-0 min-w-[230px] md:min-w-0 pr-3 md:pr-0 h-full md:h-auto py-1 md:py-0">
+             <div key={player.id} className="flex-shrink-0 min-w-[280px] md:min-w-0 pr-3 md:pr-0 h-full md:h-auto py-1 md:py-0">
                  <OpponentStrip
                    player={player}
                    isCurrentTurn={!isWaiting && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
