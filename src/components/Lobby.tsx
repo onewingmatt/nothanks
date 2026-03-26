@@ -246,29 +246,8 @@ export const Lobby: React.FC<LobbyProps> = ({
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-200/88 md:text-base">
-              Fast, tactile score-chasing with bold card design, reconnect-ready online rooms, and AI personalities that feel closer to a premium Android board game than a browser prototype.
+              Start an online room or launch a local bot session.
             </p>
-
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              <div className="native-chip"><span className="native-chip-dot" />2-6 seats</div>
-              <div className="native-chip"><span className="native-chip-dot" />Reconnect enabled</div>
-              <div className="native-chip"><span className="native-chip-dot" />Spectator support</div>
-            </div>
-          </section>
-
-          <section className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            <div className="native-panel native-mini-stat rounded-[20px] p-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/85">Quick match</div>
-              <div className="mt-1 text-lg font-black text-white">Fast join</div>
-            </div>
-            <div className="native-panel native-mini-stat rounded-[20px] p-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/85">Cross-platform</div>
-              <div className="mt-1 text-lg font-black text-white">Same room</div>
-            </div>
-            <div className="native-panel native-mini-stat rounded-[20px] p-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-200/85">Reconnect</div>
-              <div className="mt-1 text-lg font-black text-white">Keep seat</div>
-            </div>
           </section>
         </div>
 
