@@ -17,7 +17,6 @@ const canUseWindow = typeof window !== 'undefined';
 const PLAYER_NAME_KEY = 'nt_lobby_player_name';
 const ROOM_CODE_KEY = 'nt_lobby_room_code';
 const SELECTED_BOTS_KEY = 'nt_lobby_selected_bots';
-const ONLINE_SELECTED_BOTS_KEY = 'nt_lobby_online_selected_bots';
 const LOBBY_MODE_KEY = 'nt_lobby_mode';
 
 function sanitizeRoomCode(raw: string): string {
@@ -73,7 +72,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     return sanitizeRoomCode(window.localStorage.getItem(ROOM_CODE_KEY) || createRoomCode());
   });
   const [selectedBots, setSelectedBots] = useState<BotArchetypeId[]>(() => loadStoredBots(SELECTED_BOTS_KEY));
-  const [selectedOnlineBots, setSelectedOnlineBots] = useState<BotArchetypeId[]>(() => loadStoredBots(ONLINE_SELECTED_BOTS_KEY));
+  const [selectedOnlineBots, setSelectedOnlineBots] = useState<BotArchetypeId[]>([]);
   const [copied, setCopied] = useState<boolean>(false);
   const [joinAsSpectator, setJoinAsSpectator] = useState<boolean>(false);
 
@@ -93,11 +92,6 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (!canUseWindow) return;
     window.localStorage.setItem(SELECTED_BOTS_KEY, JSON.stringify(selectedBots));
   }, [selectedBots]);
-
-  useEffect(() => {
-    if (!canUseWindow) return;
-    window.localStorage.setItem(ONLINE_SELECTED_BOTS_KEY, JSON.stringify(selectedOnlineBots));
-  }, [selectedOnlineBots]);
 
   useEffect(() => {
     if (!canUseWindow) return;
@@ -165,246 +159,239 @@ export const Lobby: React.FC<LobbyProps> = ({
     onStartLocalGame(playerName.trim(), localCode.toUpperCase(), selectedBots);
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
-      <div className="bg-slate-800 p-6 md:p-8 rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-700">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-6 tracking-tight">
-          NO <span className="text-[#ffb4a8]">THANKS!</span>
-        </h1>
+  const surfaceTitle = mode === 'online' ? 'Bring friends to the table' : 'Set up a premium solo session';
 
-        <div className="mb-6 grid grid-cols-2 gap-2 rounded-xl bg-slate-900 p-1 border border-slate-700">
-          <button
-            type="button"
-            onClick={() => setMode('online')}
-            className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${mode === 'online' ? 'bg-[#400000] text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            Online Multiplayer
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('local')}
-            className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${mode === 'local' ? 'bg-[#400000] text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            Local vs AI
-          </button>
+  const surfaceCopy = mode === 'online'
+    ? 'Create or join a shared room with reconnect-ready seats, spectator support, and optional AI fillers.'
+    : 'Choose your bot lineup and start a focused local match with the same tactile presentation as online play.';
+
+  return (
+    <div className="native-shell min-h-screen overflow-hidden px-4 py-5 text-white md:px-6 md:py-6">
+      <div className="native-orb left-[-4rem] top-[6rem] h-40 w-40 bg-orange-300/25 md:h-64 md:w-64" />
+      <div className="native-orb right-[-3rem] top-[2rem] h-36 w-36 bg-cyan-300/25 md:h-56 md:w-56" />
+      <div className="native-orb bottom-[-5rem] left-[28%] h-44 w-44 bg-rose-400/20 md:h-72 md:w-72" />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="mb-5 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="native-panel-strong native-grid rounded-[28px] p-6 md:p-8">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/25 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/90">
+              <span className="native-chip-dot" />
+              Premium tabletop mobile feel
+            </div>
+
+            <h1 className="max-w-xl text-4xl font-black tracking-[-0.04em] text-white md:text-6xl">
+              NO <span className="text-[#ffb487]">THANKS!</span>
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-200/88 md:text-base">
+              Fast, tactile score-chasing with bold card design, reconnect-ready online rooms, and AI personalities that feel closer to a premium Android board game than a browser prototype.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              <div className="native-chip"><span className="native-chip-dot" />2-6 seats</div>
+              <div className="native-chip"><span className="native-chip-dot" />Reconnect enabled</div>
+              <div className="native-chip"><span className="native-chip-dot" />Spectator support</div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="native-panel native-mini-stat rounded-[24px] p-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/85">Quick Match</div>
+              <div className="mt-2 text-lg font-black text-white">Fast setup</div>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Create a room, share a short code, and fill empty seats with bots only when you want them.</p>
+            </div>
+            <div className="native-panel native-mini-stat rounded-[24px] p-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/85">Cross-platform</div>
+              <div className="mt-2 text-lg font-black text-white">One shared table</div>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Web, Android, and iOS clients can join the same room code flow with the same live game state.</p>
+            </div>
+            <div className="native-panel native-mini-stat rounded-[24px] p-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-rose-200/85">Confidence</div>
+              <div className="mt-2 text-lg font-black text-white">Reconnect-safe</div>
+              <p className="mt-2 text-sm leading-5 text-slate-300/85">Persistent guest identity reclaims your seat automatically instead of treating reconnect like a fresh session.</p>
+            </div>
+          </section>
         </div>
 
-        <form onSubmit={mode === 'online' ? handleJoinOnline : handleStartLocal} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="playerName" className="block text-sm font-medium text-slate-300 mb-2">
-                Your Name
-              </label>
-              <input
-                type="text"
-                id="playerName"
-                value={playerName}
-                onChange={e => setPlayerName(e.target.value)}
-                maxLength={24}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#ffb4a8] focus:border-transparent transition-all"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="roomCode" className="block text-sm font-medium text-slate-300 mb-2">
-                Room Code
-              </label>
-              <input
-                type="text"
-                id="roomCode"
-                value={roomCode}
-                onChange={e => {
-                  setRoomCode(sanitizeRoomCode(e.target.value));
-                  setCopied(false);
-                }}
-                maxLength={8}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white uppercase focus:outline-none focus:ring-2 focus:ring-[#ffb4a8] focus:border-transparent transition-all tracking-wider"
-                required={mode === 'online'}
-              />
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleGenerateCode}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors"
-                >
-                  New Code
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-slate-600 text-slate-200 hover:bg-slate-700 transition-colors"
-                >
-                  {copied ? 'Copied' : 'Copy Code'}
-                </button>
+        <section className="native-panel rounded-[30px] p-4 shadow-2xl md:p-6 lg:p-8">
+          <form onSubmit={mode === 'online' ? handleJoinOnline : handleStartLocal} className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
+            <div className="space-y-5">
+              <div>
+                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-300/80">Play style</div>
+                <div className="grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-1.5">
+                  <button type="button" onClick={() => setMode('online')} className={`native-tab text-left ${mode === 'online' ? 'native-tab-active' : ''}`}>
+                    <div className="text-sm font-black">Online Multiplayer</div>
+                    <div className="mt-1 text-[11px] text-slate-300/75">Shared rooms, spectators, reconnect</div>
+                  </button>
+                  <button type="button" onClick={() => setMode('local')} className={`native-tab text-left ${mode === 'local' ? 'native-tab-active' : ''}`}>
+                    <div className="text-sm font-black">Local vs AI</div>
+                    <div className="mt-1 text-[11px] text-slate-300/75">Solo session with a custom roster</div>
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {mode === 'online' ? (
-            <div className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 p-4 text-sm text-cyan-100">
-              <div className="font-bold mb-1">Cross-platform online lobby enabled</div>
-              <div className="text-cyan-100/90">
-                Any web, Android, or iOS client can join if it connects to the same WebSocket room server.
-              </div>
-              {!joinAsSpectator && (
-                <div className="mt-3 rounded-lg border border-cyan-300/30 bg-cyan-950/30 p-3">
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100">Bots For This Online Room</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {selectedOnlineBots.length === 0 && (
-                      <span className="text-[11px] text-cyan-200/90">No bots selected.</span>
-                    )}
-                    {selectedOnlineBots.map((botId, index) => {
-                      const bot = BOT_ARCHETYPES.find(value => value.id === botId);
-                      if (!bot) return null;
+              <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-300/80">Session setup</div>
+                <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">{surfaceTitle}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300/86">{surfaceCopy}</p>
 
-                      return (
-                        <button
-                          key={`${botId}-online-${index}`}
-                          type="button"
-                          onClick={() => handleRemoveOnlineBot(index)}
-                          className="rounded-full border border-cyan-200/40 bg-cyan-900/40 px-2 py-0.5 text-[10px] font-bold text-cyan-100 hover:bg-cyan-900/60"
-                          title="Remove bot"
-                        >
-                          {bot.name} x
-                        </button>
-                      );
-                    })}
+                <div className="mt-5 grid gap-4">
+                  <div>
+                    <label htmlFor="playerName" className="native-label">Display name</label>
+                    <input type="text" id="playerName" value={playerName} onChange={e => setPlayerName(e.target.value)} maxLength={24} className="native-input" required />
                   </div>
-                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-1.5">
+
+                  <div>
+                    <label htmlFor="roomCode" className="native-label">Room code</label>
+                    <input
+                      type="text"
+                      id="roomCode"
+                      value={roomCode}
+                      onChange={e => {
+                        setRoomCode(sanitizeRoomCode(e.target.value));
+                        setCopied(false);
+                      }}
+                      maxLength={8}
+                      className="native-input uppercase tracking-[0.35em]"
+                      required={mode === 'online'}
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" onClick={handleGenerateCode} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em]">New code</button>
+                      <button type="button" onClick={handleCopyCode} className="native-button-ghost text-xs font-bold uppercase tracking-[0.14em]">{copied ? 'Copied' : 'Copy room code'}</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {mode === 'online' ? (
+                <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Online readiness</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-300/88">Live room sync is available across supported clients. Hosts can add bots deliberately, while spectators can join active games without taking a seat.</div>
+
+                  <label className="mt-4 flex items-start gap-3 rounded-2xl border border-cyan-300/18 bg-cyan-500/8 px-4 py-3 text-sm text-cyan-100/92">
+                    <input type="checkbox" checked={joinAsSpectator} onChange={e => setJoinAsSpectator(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-cyan-200/50 bg-transparent" />
+                    <span>
+                      <span className="block font-bold">Join as spectator</span>
+                      <span className="mt-1 block text-xs leading-5 text-cyan-100/78">Useful for watching an active room or reserving yourself for the next match.</span>
+                    </span>
+                  </label>
+
+                  {onlineStatus && <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-500/8 px-4 py-3 text-sm font-semibold text-cyan-100">Status: {onlineStatus}</div>}
+                  {onlineError && <div className="mt-3 rounded-2xl border border-rose-300/22 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">{onlineError}</div>}
+                </div>
+              ) : (
+                <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Solo session summary</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-300/88">{playerCountLabel}. Local mode keeps your preferred AI lineup and drops you straight into a polished table view.</div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              {mode === 'online' ? (
+                <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Optional room bots</div>
+                      <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Seat fillers you control</h3>
+                    </div>
+                    <div className="rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-cyan-100">{selectedOnlineBots.length}/5</div>
+                  </div>
+
+                  <div className="mt-4 flex min-h-[52px] flex-wrap gap-2">
+                    {selectedOnlineBots.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-cyan-200/22 bg-black/15 px-4 py-3 text-sm text-cyan-100/78">No bots added yet. Add them only if you want the host room pre-filled.</div>
+                    ) : (
+                      selectedOnlineBots.map((botId, index) => {
+                        const bot = BOT_ARCHETYPES.find(value => value.id === botId);
+                        if (!bot) return null;
+
+                        return (
+                          <button key={`${botId}-online-${index}`} type="button" onClick={() => handleRemoveOnlineBot(index)} className="native-online-bot-pill px-3 py-1.5 text-[11px] font-bold" title="Remove bot">
+                            {bot.name} ×
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-2">
                     {BOT_ARCHETYPES.map(bot => (
-                      <button
-                        key={`online-${bot.id}`}
-                        type="button"
-                        disabled={selectedOnlineBots.length >= 5}
-                        onClick={() => handleAddOnlineBot(bot.id as BotArchetypeId)}
-                        className="rounded-md border border-cyan-200/35 bg-cyan-950/50 px-2 py-1 text-[10px] font-bold text-cyan-100 hover:bg-cyan-900/50 disabled:opacity-40"
-                      >
-                        {bot.name}
+                      <button key={`online-${bot.id}`} type="button" disabled={selectedOnlineBots.length >= 5} onClick={() => handleAddOnlineBot(bot.id as BotArchetypeId)} className="native-bot-card p-3 text-left disabled:opacity-40 disabled:cursor-not-allowed">
+                        <div className="text-sm font-black text-white">{bot.name}</div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-full border border-blue-400/22 bg-blue-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-blue-100">Skill {bot.skill}</span>
+                          <span className="rounded-full border border-emerald-400/22 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-100">Aware {bot.awareness}</span>
+                          <span className="rounded-full border border-rose-400/22 bg-rose-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-rose-100">Risk {bot.riskyness}</span>
+                        </div>
+                        <div className="mt-2 text-xs leading-5 text-slate-400">{bot.description}</div>
                       </button>
                     ))}
                   </div>
-                  <div className="mt-2 text-[10px] text-cyan-200/90">Applied when creating an online room.</div>
                 </div>
-              )}
-              <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-cyan-100">
-                <input
-                  type="checkbox"
-                  checked={joinAsSpectator}
-                  onChange={e => setJoinAsSpectator(e.target.checked)}
-                  className="h-4 w-4 rounded border-cyan-300 bg-cyan-900/40"
-                />
-                Join as spectator (late joins become spectators automatically while a game is active)
-              </label>
-              {onlineStatus && <div className="mt-2 text-xs text-cyan-200">Status: {onlineStatus}</div>}
-              {onlineError && <div className="mt-2 text-xs text-red-300">Error: {onlineError}</div>}
-            </div>
-          ) : (
-            <>
-              <div className="text-xs text-slate-400 -mt-3">
-                {playerCountLabel}. You + selected AI bots.
-              </div>
-
-              <div className="border-t border-slate-700 pt-6">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  <div className="w-full lg:w-1/3 flex flex-col border-r-0 lg:border-r border-slate-700 lg:pr-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="block text-sm font-bold text-slate-200">
-                        Selected AI ({selectedBots.length}/5)
-                      </label>
+              ) : (
+                <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
+                  <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Selected AI</div>
+                        <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Your roster</h3>
+                      </div>
+                      <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-200">{selectedBots.length}/5</div>
                     </div>
 
-                    <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600">
+                    <div className="mt-4 space-y-2 max-h-[360px] overflow-y-auto pr-1">
                       {selectedBots.length === 0 && (
-                        <div className="text-center text-slate-500 text-sm py-4 italic border border-dashed border-slate-700 rounded-lg">
-                          No bots selected. You will play solo.
-                        </div>
+                        <div className="rounded-2xl border border-dashed border-white/14 bg-black/15 px-4 py-5 text-center text-sm italic text-slate-400">No bots selected. Start a tight solo session if you want pure one-player play.</div>
                       )}
                       {selectedBots.map((botId, index) => {
                         const bot = BOT_ARCHETYPES.find(b => b.id === botId);
                         if (!bot) return null;
 
                         return (
-                          <div key={`${botId}-${index}`} className="flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-700">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm text-white">{bot.name}</span>
-                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">S:{bot.skill} | A:{bot.awareness} | R:{bot.riskyness}</div>
+                          <div key={`${botId}-${index}`} className="native-bot-card flex items-start justify-between gap-3 p-3">
+                            <div>
+                              <div className="text-sm font-black text-white">{bot.name}</div>
+                              <div className="mt-1 text-[11px] text-slate-400">S:{bot.skill} · A:{bot.awareness} · R:{bot.riskyness}</div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveBot(index)}
-                              className="text-slate-400 hover:text-[#ffb4a8] text-xs font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors"
-                            >
-                              X
-                            </button>
+                            <button type="button" onClick={() => handleRemoveBot(index)} className="native-button-ghost px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em]">Remove</button>
                           </div>
                         );
                       })}
                     </div>
                   </div>
 
-                  <div className="w-full lg:w-2/3">
-                    <label className="block text-sm font-bold text-slate-200 mb-3">
-                      Bot Archetypes (Skill, Awareness, Risk)
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                  <div className="native-panel-soft rounded-[24px] p-4 md:p-5">
+                    <div className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/80">Bot archetypes</div>
+                    <h3 className="mt-2 text-xl font-black tracking-[-0.03em] text-white">Build your table</h3>
+                    <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-2">
                       {BOT_ARCHETYPES.map(bot => (
-                        <button
-                          key={bot.id}
-                          type="button"
-                          disabled={selectedBots.length >= 5}
-                          onClick={() => handleAddBot(bot.id as BotArchetypeId)}
-                          className="flex flex-col items-start bg-slate-900 hover:bg-slate-800 p-2.5 rounded-lg border border-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-left group h-full"
-                        >
-                          <div className="flex justify-between w-full items-start mb-1">
-                            <span className="text-[13px] font-bold text-white group-hover:text-[#ffb4a8] transition-colors leading-tight">
-                              {bot.name}
-                            </span>
+                        <button key={bot.id} type="button" disabled={selectedBots.length >= 5} onClick={() => handleAddBot(bot.id as BotArchetypeId)} className="native-bot-card p-3 text-left disabled:opacity-40 disabled:cursor-not-allowed">
+                          <div className="text-sm font-black text-white">{bot.name}</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <span className="rounded-full border border-blue-400/22 bg-blue-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-blue-100">Skill {bot.skill}</span>
+                            <span className="rounded-full border border-emerald-400/22 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-100">Aware {bot.awareness}</span>
+                            <span className="rounded-full border border-rose-400/22 bg-rose-500/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-rose-100">Risk {bot.riskyness}</span>
                           </div>
-                          <div className="flex gap-1 flex-wrap mb-1.5 mt-auto">
-                            <span className="text-[9px] font-bold px-1.5 rounded-full bg-blue-900/50 text-blue-200 border border-blue-800">S:{bot.skill}</span>
-                            <span className="text-[9px] font-bold px-1.5 rounded-full bg-emerald-900/50 text-emerald-200 border border-emerald-800">A:{bot.awareness}</span>
-                            <span className="text-[9px] font-bold px-1.5 rounded-full bg-red-900/50 text-red-200 border border-red-800">R:{bot.riskyness}</span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 leading-snug">
-                            {bot.description}
-                          </span>
+                          <div className="mt-2 text-xs leading-5 text-slate-400">{bot.description}</div>
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              )}
 
-          {mode === 'online' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
-              <button
-                type="submit"
-                disabled={isOnlineConnecting}
-                className="w-full bg-[#400000] hover:bg-[#680000] disabled:opacity-60 text-white font-black tracking-wide py-4 rounded-xl text-lg transition-colors shadow-[0_4px_12px_rgba(64,0,0,0.5)] border border-[#680000]"
-              >
-                {isOnlineConnecting ? 'CONNECTING...' : 'JOIN ROOM'}
-              </button>
-              <button
-                type="button"
-                disabled={isOnlineConnecting}
-                onClick={handleCreateOnline}
-                className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-60 text-white font-bold tracking-wide py-4 rounded-xl text-lg transition-colors border border-slate-600"
-              >
-                CREATE + JOIN
-              </button>
+              {mode === 'online' ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button type="submit" disabled={isOnlineConnecting} className="native-button-primary w-full text-base font-black uppercase tracking-[0.16em]">{isOnlineConnecting ? 'Connecting...' : 'Join room'}</button>
+                  <button type="button" disabled={isOnlineConnecting} onClick={handleCreateOnline} className="native-button-secondary w-full text-base font-black uppercase tracking-[0.16em]">Create + join</button>
+                </div>
+              ) : (
+                <button type="submit" className="native-button-primary w-full text-base font-black uppercase tracking-[0.16em]">Start local game</button>
+              )}
             </div>
-          ) : (
-            <button
-              type="submit"
-              className="w-full bg-[#400000] hover:bg-[#680000] text-white font-black tracking-wide py-4 rounded-xl text-lg transition-colors shadow-[0_4px_12px_rgba(64,0,0,0.5)] mt-6 border border-[#680000]"
-            >
-              START LOCAL GAME
-            </button>
-          )}
-        </form>
+          </form>
+        </section>
       </div>
     </div>
   );

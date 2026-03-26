@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameBoard } from './components/GameBoard';
 import { Lobby } from './components/Lobby';
@@ -102,6 +103,17 @@ function createTodaySeed(): string {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
+}
+
+function formatOrdinal(value: number): string {
+  const ten = value % 10;
+  const hundred = value % 100;
+
+  if (hundred >= 11 && hundred <= 13) return `${value}th`;
+  if (ten === 1) return `${value}st`;
+  if (ten === 2) return `${value}nd`;
+  if (ten === 3) return `${value}rd`;
+  return `${value}th`;
 }
 
 function defaultProfileStats(seed: string): ProfileStats {
@@ -485,6 +497,7 @@ const App: React.FC = () => {
       if (previousState.status === 'waiting' && gameState.status === 'playing') {
         feedbackEngine.play('game-start', soundEnabled);
         queueMicrotask(() => {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTurnPulseKey(value => value + 1);
         });
       }
@@ -498,6 +511,7 @@ const App: React.FC = () => {
         feedbackEngine.play('turn-change', soundEnabled);
         feedbackEngine.vibrate('turn-change', hapticsEnabled);
         queueMicrotask(() => {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTurnPulseKey(value => value + 1);
         });
       }
@@ -690,6 +704,7 @@ const App: React.FC = () => {
     const todaySeed = createTodaySeed();
 
     queueMicrotask(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfileStats(previous => {
         const daily = previous.daily.seed === todaySeed
           ? previous.daily
@@ -725,6 +740,7 @@ const App: React.FC = () => {
     // Is it a bot's turn?
     if (currentPlayer.isBot) {
       queueMicrotask(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsBotThinking(true);
       });
 
@@ -771,6 +787,12 @@ const App: React.FC = () => {
   }
 
   const endGameInsights = buildInsights(actionLog, localPlayerId);
+  const finalResults = gameState.players
+    .map(player => ({ player, score: calculateScore(player) }))
+    .sort((a, b) => a.score - b.score);
+  const winner = finalResults[0]?.player;
+  const localPlacement = finalResults.findIndex(result => result.player.id === localPlayerId);
+  const localPlacementLabel = localPlacement >= 0 ? formatOrdinal(localPlacement + 1) : null;
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -810,79 +832,104 @@ const App: React.FC = () => {
       
       {/* Game Over Screen Overlay */}
       {gameState.status === 'finished' && (
-        <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-2xl">
-            <h2 className="text-3xl font-bold text-center mb-6 text-slate-800">Game Over!</h2>
-            
-            <div className="space-y-4 mb-8">
-              {gameState.players
-                .map(p => ({ player: p, score: calculateScore(p) }))
-                .sort((a, b) => a.score - b.score) // Lowest score wins
-                .map((result, index) => (
-                  <div key={result.player.id} className={`
-                    flex justify-between items-center p-4 rounded-xl border-2
-                    ${index === 0 ? 'border-[#8E0000] bg-red-50/50' : 'border-slate-200'}
-                  `}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{index === 0 ? '🏆' : `${index + 1}.`}</span>
-                      <span className="font-bold text-lg text-slate-800">{result.player.name} {result.player.isBot && '🤖'}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-black text-slate-800">{result.score} pts</div>
-                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Chips: {result.player.chips}</div>
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              {endGameInsights.map(insight => (
-                <div key={insight.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{insight.label}</div>
-                  <div className="text-sm md:text-base font-extrabold text-slate-800 mt-1">{insight.value}</div>
-                  <div className="text-[11px] text-slate-500 mt-1">{insight.detail}</div>
+        <div className="fixed inset-0 z-50 bg-[#050c15]/78 p-3 md:p-6 backdrop-blur-sm">
+          <div className="native-panel mx-auto flex h-full max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-slate-300/28 md:max-h-[calc(100dvh-3rem)]">
+            <div className="native-panel-strong border-b border-amber-200/25 px-5 py-5 md:px-7 md:py-6">
+              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/85">Match Complete</div>
+              <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-white md:text-5xl">Game Over</h2>
+              <div className="mt-4 grid gap-2 text-sm text-slate-200/90 md:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Winner</div>
+                  <div className="mt-1 text-base font-black text-white">{winner ? winner.name : 'Unknown'}</div>
                 </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Career Stats</div>
-                <div className="mt-2 text-sm text-slate-700 font-semibold">Games: <span className="font-black text-slate-900">{profileStats.gamesPlayed}</span></div>
-                <div className="text-sm text-slate-700 font-semibold">Wins: <span className="font-black text-slate-900">{profileStats.wins}</span></div>
-                <div className="text-sm text-slate-700 font-semibold">Streak: <span className="font-black text-slate-900">{profileStats.streak}</span></div>
-                <div className="text-sm text-slate-700 font-semibold">Best Score: <span className="font-black text-slate-900">{profileStats.bestScore ?? 'N/A'}</span></div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Daily Challenge</div>
-                <div className="mt-2 text-sm text-slate-700 font-semibold">Seed: <span className="font-black text-slate-900">{profileStats.daily.seed}</span></div>
-                <div className="text-sm text-slate-700 font-semibold">Attempts Today: <span className="font-black text-slate-900">{profileStats.daily.attempts}</span></div>
-                <div className="text-sm text-slate-700 font-semibold">Best Today: <span className="font-black text-slate-900">{profileStats.daily.bestScore ?? 'N/A'}</span></div>
-                <div className="text-[11px] text-slate-500 mt-1">Beat your daily best with fewer risky takes.</div>
+                <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Your Finish</div>
+                  <div className="mt-1 text-base font-black text-white">{localPlacementLabel ?? 'Spectating'}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/16 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300/80">Players</div>
+                  <div className="mt-1 text-base font-black text-white">{finalResults.length}</div>
+                </div>
               </div>
             </div>
 
-            <button 
-              onClick={() => {
-                if (roomInfo?.mode === 'local') {
-                  handleStartLocalGame(roomInfo.name, roomInfo.room, roomInfo.bots);
-                } else {
-                  handleReturnToLobby();
-                }
-              }}
-              className="w-full bg-[#400000] hover:bg-[#680000] text-white font-black tracking-wide py-4 rounded-xl text-xl transition-colors mb-3 shadow-lg"
-            >
-              {roomInfo?.mode === 'local' ? 'PLAY AGAIN' : 'RETURN TO LOBBY'}
-            </button>
-            
-            <button 
-              onClick={handleReturnToLobby}
-              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl text-lg transition-colors"
-            >
-              Return to Lobby
-            </button>
+            <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+              <section className="native-panel-soft rounded-2xl border border-slate-400/24 p-3 md:p-4">
+                <div className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-300/80">Final Standings (lowest score wins)</div>
+                <div className="space-y-2">
+                  {finalResults.map((result, index) => (
+                    <div
+                      key={result.player.id}
+                      className={`grid grid-cols-[56px_1fr_auto] items-center gap-3 rounded-xl border px-3 py-2.5 md:px-4 ${index === 0 ? 'border-amber-300/40 bg-amber-400/12' : 'border-slate-500/30 bg-black/12'}`}
+                    >
+                      <div className={`text-sm font-black uppercase tracking-[0.12em] ${index === 0 ? 'text-amber-100' : 'text-slate-300'}`}>
+                        {formatOrdinal(index + 1)}
+                      </div>
+                      <div>
+                        <div className="text-base font-black text-white">{result.player.name} {result.player.isBot ? '(AI)' : ''}</div>
+                        <div className="text-[11px] text-slate-300/75">Cards: {result.player.cards.length} | Chips: {result.player.chips}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-white leading-none">{result.score}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300/70">Points</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                {endGameInsights.map(insight => (
+                  <div key={insight.label} className="native-panel-soft rounded-xl border border-slate-400/20 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-300/75">{insight.label}</div>
+                    <div className="mt-1 text-sm md:text-base font-extrabold text-white">{insight.value}</div>
+                    <div className="mt-1 text-[11px] text-slate-300/75">{insight.detail}</div>
+                  </div>
+                ))}
+              </section>
+
+              <section className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="native-panel-soft rounded-xl border border-slate-400/20 p-3">
+                  <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-300/75">Career Stats</div>
+                  <div className="mt-2 text-sm text-slate-200 font-semibold">Games: <span className="font-black text-white">{profileStats.gamesPlayed}</span></div>
+                  <div className="text-sm text-slate-200 font-semibold">Wins: <span className="font-black text-white">{profileStats.wins}</span></div>
+                  <div className="text-sm text-slate-200 font-semibold">Streak: <span className="font-black text-white">{profileStats.streak}</span></div>
+                  <div className="text-sm text-slate-200 font-semibold">Best Score: <span className="font-black text-white">{profileStats.bestScore ?? 'N/A'}</span></div>
+                </div>
+
+                <div className="native-panel-soft rounded-xl border border-slate-400/20 p-3">
+                  <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-300/75">Daily Challenge</div>
+                  <div className="mt-2 text-sm text-slate-200 font-semibold">Seed: <span className="font-black text-white">{profileStats.daily.seed}</span></div>
+                  <div className="text-sm text-slate-200 font-semibold">Attempts Today: <span className="font-black text-white">{profileStats.daily.attempts}</span></div>
+                  <div className="text-sm text-slate-200 font-semibold">Best Today: <span className="font-black text-white">{profileStats.daily.bestScore ?? 'N/A'}</span></div>
+                  <div className="text-[11px] text-slate-300/75 mt-1">Beat your daily best with fewer risky takes.</div>
+                </div>
+              </section>
+            </div>
+
+            <div className="border-t border-slate-500/30 p-4 md:p-5">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <button
+                  onClick={() => {
+                    if (roomInfo?.mode === 'local') {
+                      handleStartLocalGame(roomInfo.name, roomInfo.room, roomInfo.bots);
+                    } else {
+                      handleReturnToLobby();
+                    }
+                  }}
+                  className="native-button-primary w-full py-3.5 text-base md:text-lg font-black uppercase tracking-[0.14em]"
+                >
+                  {roomInfo?.mode === 'local' ? 'Play Again' : 'Return To Lobby'}
+                </button>
+
+                <button
+                  onClick={handleReturnToLobby}
+                  className="native-button-secondary w-full py-3.5 text-base md:text-lg font-black uppercase tracking-[0.14em]"
+                >
+                  Exit Match
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

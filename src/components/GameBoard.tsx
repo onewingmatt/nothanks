@@ -73,35 +73,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         : `${currentPlayer.name}'s turn`;
 
   return (
-    // Use h-[100dvh] instead of h-screen to properly fit mobile browsers with dynamic address bars
-    <div className="flex flex-col h-[100dvh] bg-[#f3f3f3] font-sans text-slate-800 overflow-hidden">
-      
-      {/* Header & Controls */}
-      {/* Reduced mobile height from 64px to 56px */}
-      <header className="flex-none h-[56px] md:h-[64px] px-3 py-2 md:p-4 flex justify-between items-center bg-[#2f3131] text-white shadow-sm z-10 border-b border-[#1a1c1c]">
+    <div className="native-shell flex h-[100dvh] flex-col overflow-hidden text-slate-100">
+      <div className="native-orb left-[-5rem] top-[4.5rem] h-36 w-36 bg-orange-300/20 md:h-52 md:w-52" />
+      <div className="native-orb right-[-4rem] top-[5rem] h-32 w-32 bg-cyan-300/22 md:h-48 md:w-48" />
+
+      <header className="native-panel relative z-20 flex-none h-[56px] md:h-[64px] px-3 py-2 md:px-4 md:py-3 flex justify-between items-center border-b border-slate-500/30 rounded-none shadow-none">
         <div className="flex items-center gap-2 md:gap-4">
           <h1 className="text-lg md:text-2xl font-black tracking-tighter">
-            NO <span className="text-[#ffb4a8]">THANKS!</span>
+            NO <span className="text-[#ffb487]">THANKS!</span>
           </h1>
           {roomCode && (
-            <div className="hidden md:flex bg-black/40 px-2.5 py-1 rounded text-[10px] md:text-xs font-medium text-slate-300 border border-slate-700">
-              ROOM: <span className="text-white ml-1 font-bold">{roomCode}</span>
+            <div className="native-status-pill hidden md:flex px-2.5 py-1 text-[10px] md:text-xs font-semibold">
+              ROOM: <span className="text-white ml-1 font-bold tracking-[0.18em]">{roomCode}</span>
             </div>
           )}
           {isOnlineRoom && isSpectator && (
-            <div className="hidden md:flex bg-indigo-900/40 px-2.5 py-1 rounded text-[10px] md:text-xs font-bold text-indigo-100 border border-indigo-700">
+            <div className="hidden md:flex rounded-full border border-indigo-300/35 bg-indigo-500/16 px-2.5 py-1 text-[10px] md:text-xs font-black text-indigo-100 tracking-[0.12em]">
               SPECTATOR
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3 md:gap-6">
-          <div className={`flex flex-col items-end transition-opacity ${isWaiting ? 'opacity-0' : 'opacity-100'}`}>
-             <span className="text-[8px] md:text-[10px] font-semibold text-slate-400 uppercase tracking-wider leading-none">Remaining</span>
-             <span className="text-base md:text-lg font-bold leading-tight">{gameState.deck.length}</span>
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto max-w-[62vw] md:max-w-none pb-0.5">
+          <div className={`native-status-pill hidden sm:flex flex-col items-end px-2.5 py-1 transition-opacity ${isWaiting ? 'opacity-0' : 'opacity-100'}`}>
+             <span className="text-[8px] md:text-[10px] font-semibold uppercase tracking-wider leading-none opacity-75">Remaining</span>
+             <span className="text-[11px] md:text-sm font-bold leading-tight">{gameState.deck.length}</span>
           </div>
           <button
             onClick={onToggleSound}
-            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${soundEnabled ? 'bg-emerald-900/50 border-emerald-700 text-emerald-100 hover:bg-emerald-900/70' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+            className={`native-toggle shrink-0 px-2 py-1 md:px-3 md:py-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider ${soundEnabled ? 'native-toggle-active' : ''}`}
             aria-pressed={soundEnabled}
           >
             SFX {soundEnabled ? 'On' : 'Off'}
@@ -109,7 +108,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <button
             onClick={onToggleHaptics}
             disabled={!hapticsSupported}
-            className={`px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm ${hapticsSupported ? (hapticsEnabled ? 'bg-indigo-900/50 border-indigo-700 text-indigo-100 hover:bg-indigo-900/70' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700') : 'bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed'}`}
+            className={`native-toggle shrink-0 px-2 py-1 md:px-3 md:py-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider ${hapticsSupported && hapticsEnabled ? 'native-toggle-active' : ''} ${!hapticsSupported ? 'opacity-45 cursor-not-allowed' : ''}`}
             aria-pressed={hapticsEnabled}
             title={hapticsSupported ? 'Toggle haptics' : 'This browser does not support vibration haptics'}
           >
@@ -117,14 +116,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </button>
           <button
             onClick={onOpenTutorial}
-            className="px-2 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-sm bg-amber-900/40 border-amber-700 text-amber-100 hover:bg-amber-900/65"
+            className="native-toggle shrink-0 px-2 py-1 md:px-3 md:py-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider"
             title="Open quick guide"
           >
             Guide
           </button>
           <button 
             onClick={onToggleHideChips}
-            className="bg-[#1a1c1c] hover:bg-black px-2.5 py-1 md:px-3 md:py-1.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors border border-slate-700 text-slate-300 shadow-sm"
+            className={`native-toggle shrink-0 px-2.5 py-1 md:px-3 md:py-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider ${hideChips ? 'native-toggle-active' : ''}`}
           >
             {hideChips ? 'Show Chips' : 'Hide Chips'}
           </button>
@@ -132,35 +131,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </header>
 
       {hapticsStatus && (
-        <div className="flex-none bg-cyan-50 border-b border-cyan-200 text-cyan-900 text-[10px] md:text-xs font-semibold px-3 py-1 text-center">
+        <div className="relative z-20 flex-none border-b border-cyan-300/20 bg-cyan-500/10 text-cyan-100 text-[10px] md:text-xs font-semibold px-3 py-1 text-center">
           {hapticsStatus}
         </div>
       )}
-      
-      {/* Mobile Room Code Strip */}
-      {/* Reduced mobile height from 28px to 24px */}
+
       {roomCode && (
-        <div className="md:hidden flex-none h-[24px] bg-slate-800 text-slate-300 text-[9px] py-0.5 px-3 text-center border-b border-slate-700 flex items-center justify-center">
-          ROOM: <span className="text-white font-bold ml-1 tracking-wider">{roomCode}</span>
+        <div className="native-panel-soft relative z-20 md:hidden flex-none h-[24px] text-slate-200 text-[9px] py-0.5 px-3 text-center border-b border-slate-500/30 flex items-center justify-center rounded-none shadow-none">
+          ROOM: <span className="text-white font-bold ml-1 tracking-[0.18em]">{roomCode}</span>
         </div>
       )}
 
-      {/* Main Game Area */}
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        
-        {/* Opponents (Top Row Mobile / Left Panel Desktop) */}
-        {/* Reduced mobile height from 150px to 110px */}
+      <main className="relative z-10 flex-1 flex flex-col md:flex-row overflow-hidden bg-[radial-gradient(circle_at_38%_42%,rgba(255,255,255,0.1),transparent_45%),linear-gradient(180deg,rgba(9,16,28,0.92),rgba(12,21,35,0.96))]">
         <section className={`
-           flex-none w-full md:w-[320px] 
-           flex flex-row md:flex-col gap-3 p-3 md:p-6 
-           overflow-x-auto md:overflow-y-auto bg-white/50 border-b md:border-b-0 md:border-r border-slate-200
-           scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent items-center md:items-stretch
-           ${isWaiting ? 'hidden' : 'h-[110px] md:h-full opacity-100'}
+           native-panel-soft flex-none w-full md:w-[330px]
+           flex flex-row md:flex-col gap-3 p-3 md:p-5
+           overflow-x-auto md:overflow-y-auto border-b md:border-b-0 md:border-r border-slate-500/25
+           scrollbar-thin scrollbar-thumb-slate-500/70 scrollbar-track-transparent items-center md:items-stretch rounded-none
+           ${isWaiting ? 'hidden' : 'h-[114px] md:h-full opacity-100'}
         `}>
            {gameState.players.filter(p => p.id !== localPlayerId).map((player) => (
-             <div key={player.id} className="flex-shrink-0 min-w-[220px] md:min-w-0 pr-3 md:pr-0 h-full md:h-auto py-1 md:py-0">
-                 <OpponentStrip 
-                   player={player} 
+             <div key={player.id} className="flex-shrink-0 min-w-[230px] md:min-w-0 pr-3 md:pr-0 h-full md:h-auto py-1 md:py-0">
+                 <OpponentStrip
+                   player={player}
                    isCurrentTurn={!isWaiting && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
                    hideChips={hideChips}
                    isBotThinking={isBotThinking && gameState.players[gameState.currentPlayerIndex]?.id === player.id}
@@ -169,38 +162,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
            ))}
         </section>
 
-        {/* Center Board (Middle) */}
-        <section className="flex-1 flex flex-col items-center justify-center p-2 md:p-8 bg-[radial-gradient(circle_at_center,_#ffffff,_#e2e2e2)] relative overflow-hidden min-h-0">
-          
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwdjhoOHYtOEgweiIgZmlsbD0ibm9uZSI+PC9wYXRoPgo8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMSIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjA1Ij48L2NpcmNsZT4KPC9zdmc+')] opacity-50 pointer-events-none"></div>
+        <section className="flex-1 flex flex-col items-center justify-center p-3 md:p-8 relative overflow-hidden min-h-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.18),rgba(255,255,255,0.02)_42%,transparent_70%)] pointer-events-none" />
 
           {isWaiting ? (
-            // WAITING ROOM UI
-            <div className="z-10 flex flex-col items-center text-center animate-fade-in p-4 overflow-y-auto max-h-full">
-               <h2 className="text-xl md:text-3xl font-black tracking-tight text-[#400000] mb-2">Waiting for Players</h2>
-               <p className="text-slate-500 text-xs md:text-base mb-6 font-medium max-w-sm">
+            <div className="z-10 native-panel-soft flex flex-col items-center text-center p-5 md:p-7 overflow-y-auto max-h-full rounded-[26px] border border-slate-400/24 shadow-2xl w-full max-w-2xl">
+               <h2 className="text-2xl md:text-4xl font-black tracking-[-0.03em] text-white mb-2">Waiting For Players</h2>
+               <p className="text-slate-300 text-xs md:text-base mb-6 font-medium max-w-xl leading-6">
                  {isOnlineRoom
-                   ? <>Share room code <strong className="text-slate-700">{roomCode}</strong> so friends can join from web, Android, or iOS clients.</>
-                   : <>Share the room code <strong className="text-slate-700">{roomCode}</strong> with others, or start now with {gameState.players.length - 1} bots.</>}
+                   ? <>Share room code <strong className="text-white tracking-[0.16em]">{roomCode}</strong> so friends can join from web, Android, or iOS clients.</>
+                   : <>Share room code <strong className="text-white tracking-[0.16em]">{roomCode}</strong> with others, or start now with {gameState.players.length - 1} bots.</>}
                </p>
 
                {isOnlineRoom && onlineStatus && (
-                 <div className="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-[11px] md:text-xs font-semibold text-cyan-900">
+                 <div className="mb-4 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-[11px] md:text-xs font-semibold text-cyan-100">
                    {onlineStatus}
                  </div>
                )}
-               
-               {/* Display players currently in lobby */}
-               <div className="flex gap-2 flex-wrap justify-center mb-8 max-w-md">
+
+               <div className="flex gap-2 flex-wrap justify-center mb-8 max-w-xl">
                  {gameState.players.map(p => (
-                   <div key={p.id} className="bg-white border border-slate-200 shadow-sm rounded-full px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-bold text-slate-700 flex items-center gap-2">
-                     <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></span>
-                     {p.name} {p.isBot && '🤖'}
+                   <div key={p.id} className="native-status-pill px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-bold text-slate-100 flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 animate-pulse" />
+                     {p.name} {p.isBot && '(AI)'}
                    </div>
                  ))}
                  {spectators.map(spectator => (
-                   <div key={`spectator-${spectator.name}`} className="bg-indigo-50 border border-indigo-200 shadow-sm rounded-full px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-bold text-indigo-700 flex items-center gap-2">
-                     <span className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${spectator.connected ? 'bg-indigo-500' : 'bg-slate-400'}`}></span>
+                   <div key={`spectator-${spectator.name}`} className="rounded-full border border-indigo-300/32 bg-indigo-500/16 px-3 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-bold text-indigo-100 flex items-center gap-2">
+                     <span className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${spectator.connected ? 'bg-indigo-300' : 'bg-slate-400'}`} />
                      {spectator.name} (spectator)
                    </div>
                  ))}
@@ -209,30 +198,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <button
                 onClick={onStartGame}
                 disabled={isOnlineRoom && !isOnlineHost}
-                className="px-8 py-3 md:px-10 md:py-5 rounded-full font-black text-base md:text-xl bg-[#1A237E] text-white shadow-lg border-2 border-[#1A237E] hover:bg-[#000767] hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="native-button-primary px-8 py-3 md:px-10 md:py-4 rounded-full font-black text-base md:text-xl uppercase tracking-[0.12em] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isOnlineRoom ? (isOnlineHost ? 'START MATCH' : 'WAITING FOR HOST') : 'START GAME'}
+                {isOnlineRoom ? (isOnlineHost ? 'Start Match' : 'Waiting For Host') : 'Start Game'}
               </button>
             </div>
           ) : (
-            // ACTIVE GAME UI
             <div className="flex flex-col items-center justify-center w-full h-full min-h-0">
-              {/* Reduced margin/heights across the board to compress the center vertically */}
               <div className="mb-2 md:mb-6 text-center z-10 flex-none">
-                <h2 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
+                <h2 className="text-[10px] md:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">
                   {gameState.status === 'finished' ? 'Game Over' : 'Current Card'}
                 </h2>
               </div>
 
               {mistakeHint && (
-                <div className="mb-3 md:mb-4 w-full max-w-xl rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 text-xs md:text-sm font-semibold shadow-sm">
+                <div className="mb-3 md:mb-4 w-full max-w-xl rounded-xl border border-amber-300/30 bg-amber-500/12 px-3 py-2 text-amber-100 text-xs md:text-sm font-semibold shadow-sm">
                   {mistakeHint}
                 </div>
               )}
 
               <div
                 key={turnPulseKey}
-                className={`mb-4 md:mb-6 px-4 py-1.5 rounded-full border font-bold text-[11px] md:text-sm tracking-wider uppercase bg-white/80 backdrop-blur-sm shadow-sm z-10 ${isLocalTurn ? 'text-[#1b5e20] border-[#1b5e20]/30' : 'text-slate-700 border-slate-300'} ${prefersReducedMotion ? '' : 'turn-banner-enter'}`}
+                className={`native-status-pill mb-4 md:mb-6 px-4 py-1.5 border font-bold text-[11px] md:text-sm tracking-wider uppercase backdrop-blur-sm shadow-sm z-10 ${isLocalTurn ? 'text-emerald-100 border-emerald-300/35 bg-emerald-500/16' : 'text-slate-200'} ${prefersReducedMotion ? '' : 'turn-banner-enter'}`}
               >
                 {turnLabel}
                 {!isLocalTurn && isBotThinking && (
@@ -250,7 +237,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <div
                 key={gameState.currentCard?.value ?? 'no-card'}
                 className={`
-                  absolute inset-0 bg-[#f9f9f9] rounded-[12px] md:rounded-[20px] shadow-[0_12px_24px_-8px_rgba(0,0,0,0.25)] border border-white
+                  native-card-shell absolute inset-0 rounded-[12px] md:rounded-[20px]
                   flex flex-col items-center justify-center transition-transform duration-700 transform-gpu overflow-hidden
                   ${gameState.currentCard ? 'scale-100 rotate-y-0 card-deal-in' : 'scale-95 rotate-y-180 opacity-0'}
                 `}
@@ -303,7 +290,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                            <div className="absolute inset-1 border border-[#380b00]/20 rounded-full opacity-60" />
                         </div>
                       ))}
-                      <div className="absolute -top-1.5 -right-1.5 md:-top-2 md:-right-2 bg-[#1a1c1c] text-[#f9f9f9] font-black text-[10px] md:text-sm px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full shadow-xl border-2 border-[#1a1c1c] z-30 flex items-center gap-1">
+                       <div className="absolute -top-1.5 -right-1.5 md:-top-2 md:-right-2 native-status-pill font-black text-[10px] md:text-sm px-1.5 py-0.5 md:px-2 md:py-0.5 shadow-xl border z-30 flex items-center gap-1">
                          <span className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full bg-[#e17c5a] inline-block shadow-inner" />
                          {gameState.chipsOnCurrentCard}
                       </div>
@@ -323,16 +310,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   onClick={() => onAction('pass')}
                   disabled={!canPass || !isLocalTurn}
                   className={`
-                    px-5 md:px-8 rounded-full font-black text-sm md:text-base shadow-md border-2
+                    native-button-secondary px-5 md:px-8 rounded-full font-black text-sm md:text-base shadow-md border
                     transition-all duration-200 flex flex-col items-center justify-center min-w-[110px] md:min-w-[140px] h-full
                     ${canPass 
-                      ? 'bg-white hover:bg-slate-50 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0' 
-                      : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}
+                      ? 'hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0' 
+                      : 'opacity-40 cursor-not-allowed'}
                   `}
-                  style={canPass ? { color: currentCardColor, borderColor: currentCardColor } : {}}
+                  style={canPass ? { color: '#f2f7ff', borderColor: `${currentCardColor}88` } : {}}
                 >
                   <span className="tracking-[0.1em]">PASS</span>
-                  <span className={`text-[8px] md:text-[9px] font-bold mt-0.5 leading-none ${canPass ? 'opacity-70' : 'text-slate-400'}`}>
+                  <span className={`text-[8px] md:text-[9px] font-bold mt-0.5 leading-none ${canPass ? 'opacity-75' : 'text-slate-400'}`}>
                     PAY 1 CHIP
                   </span>
                 </button>
@@ -340,9 +327,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   onClick={() => onAction('take')}
                   disabled={!isLocalTurn}
                   className="
-                    px-5 md:px-8 rounded-full font-black text-sm md:text-base text-white shadow-md border-2
+                    px-5 md:px-8 rounded-full font-black text-sm md:text-base text-white shadow-md border
                     hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 h-full
                     transition-all duration-200 flex flex-col items-center justify-center min-w-[110px] md:min-w-[140px]
+                    disabled:opacity-40 disabled:cursor-not-allowed
                   "
                   style={{ backgroundColor: currentCardColor, borderColor: currentCardColor }}
                 >
@@ -355,7 +343,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               )}
 
               {isSpectator && (
-                <div className="mt-6 md:mt-10 rounded-full border border-indigo-300 bg-indigo-50 px-4 py-2 text-[11px] md:text-sm font-bold uppercase tracking-wider text-indigo-900">
+                <div className="mt-6 md:mt-10 rounded-full border border-indigo-300/35 bg-indigo-500/16 px-4 py-2 text-[11px] md:text-sm font-bold uppercase tracking-wider text-indigo-100">
                   Spectating - controls disabled
                 </div>
               )}
@@ -365,33 +353,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       </main>
 
-      {/* Local Player (Bottom) */}
-      {/* Reduced mobile height from 140px to 125px */}
-      <footer className={`flex-none bg-white border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 
-                         h-[125px] md:h-[150px] w-full overflow-hidden transition-opacity duration-300 ${isWaiting ? 'opacity-0 pointer-events-none' : 'opacity-100 block'}`}>
+      <footer className={`native-panel-soft flex-none border-t border-slate-500/28 z-20 h-[125px] md:h-[150px] w-full overflow-hidden transition-opacity duration-300 rounded-none ${isWaiting ? 'opacity-0 pointer-events-none' : 'opacity-100 block'}`}>
         {!isSpectator && localPlayer && (
             <div className="w-full h-full max-w-7xl mx-auto px-2 md:px-6 py-2 md:py-3 flex justify-center">
-               <div className="flex flex-col h-full w-full border border-slate-300 rounded-xl bg-[#f9f9f9] shadow-sm overflow-hidden">
+               <div className="native-panel-soft flex flex-col h-full w-full border border-slate-500/28 rounded-xl overflow-hidden">
                   
-                  {/* Local Header */}
-                  <div className={`flex justify-between items-center px-3 md:px-4 py-1.5 md:py-2 flex-none h-[36px] md:h-[40px] border-b border-slate-200 transition-colors duration-500 ${isLocalTurn && !isWaiting ? 'bg-opacity-10' : 'bg-white'}`}
-                       style={isLocalTurn && !isWaiting ? { backgroundColor: `${currentCardColor}15` } : {}}
+                  <div className={`flex justify-between items-center px-3 md:px-4 py-1.5 md:py-2 flex-none h-[36px] md:h-[40px] border-b border-slate-500/30 transition-colors duration-500 ${isLocalTurn && !isWaiting ? 'bg-opacity-10' : ''}`}
+                       style={isLocalTurn && !isWaiting ? { backgroundColor: `${currentCardColor}22` } : {}}
                   >
-                    <h3 className="font-bold text-xs md:text-sm tracking-tight flex items-center gap-1.5 text-slate-800">
+                    <h3 className="font-bold text-xs md:text-sm tracking-tight flex items-center gap-1.5 text-slate-100">
                       {isLocalTurn && !isWaiting && (
                          <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse shadow-sm" style={{ backgroundColor: currentCardColor }}></span>
                       )}
                       {localPlayer.name} (You)
                     </h3>
-                    <div className="flex items-center gap-1.5 px-2 md:px-3 py-0.5 md:py-1 rounded-full font-bold text-[10px] md:text-xs bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
-                      <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#b52518] shadow-inner" />
+                    <div className="native-chip-badge flex items-center gap-1.5 px-2 md:px-3 py-0.5 md:py-1 font-bold text-[10px] md:text-xs border shadow-sm">
+                      <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-orange-100 shadow-inner" />
                       {localPlayer.chips} Chips
                     </div>
                   </div>
 
-                  {/* Local Cards - Horizontal strict scrolling */}
-                  <div className="flex-1 relative overflow-hidden bg-white">
-                    <div className="absolute inset-0 overflow-x-auto overflow-y-hidden px-3 md:px-4 flex items-center scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                  <div className="flex-1 relative overflow-hidden bg-black/12">
+                    <div className="absolute inset-0 overflow-x-auto overflow-y-hidden px-3 md:px-4 flex items-center scrollbar-thin scrollbar-thumb-slate-500/75 scrollbar-track-transparent">
                        {localPlayer.cards.length > 0 ? (
                          <PlayerTableau player={localPlayer} isCurrentTurn={false} hideChips={false} isLocalPlayer={true} />
                        ) : (
@@ -408,9 +391,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {isSpectator && (
             <div className="w-full h-full max-w-5xl mx-auto px-2 md:px-6 py-2 md:py-3 flex items-center justify-center">
-              <div className="w-full border border-indigo-200 rounded-xl bg-indigo-50 px-4 py-3 text-center">
-               <div className="text-sm md:text-base font-extrabold text-indigo-900">Spectator View</div>
-               <div className="text-xs md:text-sm text-indigo-800 mt-1">You joined as spectator. You can watch this match live and join as a player before the next game starts.</div>
+              <div className="w-full border border-indigo-300/32 rounded-xl bg-indigo-500/16 px-4 py-3 text-center">
+               <div className="text-sm md:text-base font-extrabold text-indigo-100">Spectator View</div>
+               <div className="text-xs md:text-sm text-indigo-100/86 mt-1">You joined as spectator. You can watch this match live and join as a player before the next game starts.</div>
               </div>
             </div>
           )}
