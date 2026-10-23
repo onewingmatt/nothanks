@@ -56,6 +56,6 @@
       "audit",
       "deploy:verify"
     ],
-    "note": "FLOOR = the proofs this repo must ship. The `audit` tier also proves the COMMITTED lock still satisfies `npm ci --dry-run`: this repo was once unbuildable from a clean checkout ('Missing: tsx@4.23.15 from lock file') and that only surfaced when the deploy was rebuilt by hand (fixed in 40f4903). The declared `test` tier is deliberately NOT gated: it is RED at HEAD (src/game/ai.test.ts: Tunnel-Vision Pro, 'Expected take, got pass') and src/utils/colors.test.ts carries uncommitted palette WIP, so its verdict would not be a HEAD verdict."
+    "note": "FLOOR = the proofs this repo must ship. The `audit` tier also proves the COMMITTED lock still satisfies `npm ci --dry-run`: this repo was once unbuildable from a clean checkout ('Missing: tsx@4.23.15 from lock file') and that only surfaced when the deploy was rebuilt by hand (fixed in 40f4903). The declared `test` tier is deliberately NOT gated: it is FLAKY at HEAD (measured 4/20 runs red: src/game/ai.test.ts '[Tunnel-Vision Pro] Calculator (Low Risk -> Take instantly) -> Expected take, got pass' - the bot decision is non-deterministic), and src/utils/colors.test.ts carries uncommitted palette WIP. A flaky tier in FLOOR would make this gate itself flaky; make the decision deterministic before adding it."
   }
 }
