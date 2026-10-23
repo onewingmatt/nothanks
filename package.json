@@ -13,9 +13,12 @@
     "cap:sync": "npm run build && npx cap sync",
     "cap:android": "npx cap open android",
     "lint": "eslint .",
-    "audit": "tsx scripts/independent-rules-check.ts",
+    "audit": "npm ci --dry-run --no-audit --no-fund >/dev/null 2>&1 || { echo 'lock: the committed package-lock.json does not satisfy npm ci - this checkout is not installable'; npm ci --dry-run --no-audit --no-fund 2>&1 | grep -E 'Missing:|in sync' | head -4 >&2; exit 1; }; tsx scripts/independent-rules-check.ts",
     "test": "tsx src/game/ai.test.ts && tsx src/utils/colors.test.ts",
     "preview": "vite preview",
+    "deploy:verify": "node scripts/deploy-verify.mjs",
+    "gate": "node scripts/gate.mjs",
+    "gate:strict": "node scripts/gate.mjs --strict",
     "start": "node server/multiplayer-server.js",
     "start:static": "serve -s dist -l $PORT",
     "start:multiplayer": "node server/multiplayer-server.js"
@@ -47,5 +50,12 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^8.0.1"
+  },
+  "gate": {
+    "floor": [
+      "audit",
+      "deploy:verify"
+    ],
+    "note": "FLOOR = the proofs this repo must ship. The `audit` tier also proves the COMMITTED lock still satisfies `npm ci --dry-run`: this repo was once unbuildable from a clean checkout ('Missing: tsx@4.23.15 from lock file') and that only surfaced when the deploy was rebuilt by hand (fixed in 40f4903). The declared `test` tier is deliberately NOT gated: it is RED at HEAD (src/game/ai.test.ts: Tunnel-Vision Pro, 'Expected take, got pass') and src/utils/colors.test.ts carries uncommitted palette WIP, so its verdict would not be a HEAD verdict."
   }
 }

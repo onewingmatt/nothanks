@@ -1,0 +1,6 @@
+{
+  "host": "onewing@107.172.153.240",
+  "container": "nothanks",
+  "files": ["package.json", "package-lock.json"],
+  "url": "https://nothanks.onewing.top/"
+}
