@@ -163,7 +163,10 @@ function evaluateBotDecision(gameState, botPlayer) {
   }
 
   if (perceivedCost <= 0) {
-    if (riskyness < 0.4 || perceivedCost <= -10) return 'take';
+    // Keep in lockstep with src/game/ai.ts (this block is a hand-copy of it):
+    // `<=`, not `<`, or the 0.4-riskyness archetype coin-flips instead of
+    // taking a card it priced as beneficial.
+    if (riskyness <= 0.4 || perceivedCost <= -10) return 'take';
 
     let safeToPass = true;
     if (awareness >= 0.4) {

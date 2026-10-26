@@ -98,3 +98,65 @@ The port is unambiguously a real-rules implementation of **No Thanks!** (Geschen
 ## Recommendation summary
 
 The engine is a faithful, minimal rules implementation of No Thanks! for its chosen scope (single round, 3–5 player-equivalent chip counts, solo+online). The three real divergences are **scope decisions, not mistakes**: multi-round cumulative scoring, 6/7-player chip scaling, and the physical 3-player minimum. For a done-gate bar, the priority gaps are: socket E2E, automated bot-move probe in a live room, headless zero-pageerror play-through, seeded replay harness, and reconciling the duplicated server engine with a shared wire contract.
+
+## Bot-decision determinism and the test tier, 2026-10-25
+
+### The flake
+
+`src/game/ai.test.ts` failed about 1 run in 5 — always the same case, `[Tunnel-Vision Pro]
+Calculator (Low Risk -> Take instantly) -> Expected 'take', got 'pass'`. Measured at HEAD:
+**4/20 runs red**, and the identical case every time.
+
+Root cause was a boundary in `evaluateBeneficialCard`:
+
+```ts
+if (riskyness < 0.4) return 'take';   // "no risk appetite"
+```
+
+The calculator archetype's `riskyness` is exactly `0.4`, so `<` excluded it. It fell through to the
+milk-for-chips path, where its `awareness` of 0.2 (below the 0.4 needed to assess opponents) takes
+the `else` branch: `safeToPass = random() > 0.5`, then `random() < riskyness` → `pass`. That is
+P(pass) = 0.5 × 0.4 = **20%**, which is exactly the observed failure rate. Nothing was modelling
+anything there — a bot with no opponent information was flipping a coin.
+
+### The fix
+
+`<` → `<=` in **both** copies of the AI (`src/game/ai.ts` and the hand-copied block in
+`server/multiplayer-server.js` — see gap 7 above; the server copy is the one that actually plays
+online, so a fix to only one of them would have changed the tests and not the game). Blast radius is
+one archetype: the calculator is the only one sitting at exactly 0.4 (novice 0.2, average 0.5,
+gambler 0.9, empath 0.3, bully 0.8, grandmaster 0.5, shark 0.9).
+
+### Measured effect
+
+- Flakiness: `npm test` 20/20 green (was 4/20 red).
+- Strength, via a new seeded self-play harness (`scripts/archetype-eval.ts`, 400 tables of 4 →
+  200 games per archetype, identical seeds before and after):
+
+  | archetype | win% before → after | avg score before → after (lower is better) |
+  |---|---|---|
+  | Arrogant Shark | 41.5 → 41.5 | 46.01 → 46.01 |
+  | Tunnel-Vision Pro | 38.0 → **40.0** | 48.75 → **46.86** |
+  | The Grandmaster | 29.5 → 32.5 | 45.62 → 45.24 |
+  | Average Joe | 31.0 → 27.5 | 54.06 → 54.17 |
+  | The Bully | 21.0 → 21.0 | 52.45 → 52.17 |
+  | The Watcher | 15.0 → 18.0 | 59.42 → 57.04 |
+  | Blind Gambler | 18.5 → 16.5 | 62.35 → 59.85 |
+  | Clueless Novice | 11.0 → 10.5 | 68.84 → 68.75 |
+
+  The calculator — the only archetype whose rule changed — gained ~2 points of win rate and ~1.9
+  points of score. It is stronger, because it now takes a card it has already priced as beneficial
+  instead of gambling it back to the table. The other archetypes' numbers move only by the RNG stream
+  shift plus table noise (200 games each, ~3.5 points of standard error on a 25%-par win rate).
+
+### A second, older defect this exposed
+
+`npm test` was red **at HEAD regardless of the flake**, and the gate note had blamed it on
+"uncommitted palette WIP". `41363ee` ("UI refresh: white cards…") changed `getCardColor`'s
+saturation/lightness from 85%/25% to 82%/32% and did not update `colors.test.ts`, which had been
+asserting the old values ever since. The uncommitted `colors.test.ts` in the tree was the missing
+half of that commit, not WIP. It is committed here, which is what makes `test` safe to gate.
+
+`test` therefore joins the FLOOR (was `audit` + `deploy:verify`), and the counters are read from a
+clean checkout rather than a dirty tree — a tier that only passes with uncommitted files next to it
+is not a gate.

@@ -53,9 +53,10 @@
   },
   "gate": {
     "floor": [
+      "test",
       "audit",
       "deploy:verify"
     ],
-    "note": "FLOOR = the proofs this repo must ship. The `audit` tier also proves the COMMITTED lock still satisfies `npm ci --dry-run`: this repo was once unbuildable from a clean checkout ('Missing: tsx@4.23.15 from lock file') and that only surfaced when the deploy was rebuilt by hand (fixed in 40f4903). The declared `test` tier is deliberately NOT gated: it is FLAKY at HEAD (measured 4/20 runs red: src/game/ai.test.ts '[Tunnel-Vision Pro] Calculator (Low Risk -> Take instantly) -> Expected take, got pass' - the bot decision is non-deterministic), and src/utils/colors.test.ts carries uncommitted palette WIP. A flaky tier in FLOOR would make this gate itself flaky; make the decision deterministic before adding it."
+    "note": "FLOOR = the proofs this repo must ship. `test` is now gated: it was flaky at HEAD (4/20 runs red) because the bot decision was non-deterministic, and 20/20 runs are green after the fix in the riskyness boundary (see RULES-AUDIT.md). `audit` also proves the COMMITTED lock still satisfies `npm ci --dry-run`: this repo was once unbuildable from a clean checkout ('Missing: tsx@4.23.15 from lock file') and that only surfaced when the deploy was rebuilt by hand (fixed in 40f4903). Bot strength is measured by `npx tsx scripts/archetype-eval.ts` - deliberately NOT a tier, because a strength number is noisy and a gate on it would fail for reasons unrelated to the commit."
   }
 }

@@ -91,7 +91,15 @@ function evaluateBeneficialCard(
   random: RandomSource
 ): BotAction {
   // If the bot has no risk appetite, take it immediately to be safe.
-  if (riskyness < 0.4) return 'take';
+  // `<=`, not `<`: 0.4 is the top of the no-appetite band, and the archetype
+  // that sits exactly on it (calculator, riskyness 0.4) is the one described
+  // as "mathematically perfect for their own hand". With `<` it fell through
+  // to the milk-for-chips path below, where its 0.2 awareness cannot assess
+  // whether the card comes back, so the decision became a coin flip
+  // (random() > 0.5 → safeToPass, then random() < 0.4 → pass): a 20% chance
+  // of passing a card it had already priced as beneficial, which is what made
+  // ai.test.ts's "Low Risk -> Take instantly" case fail about 1 run in 5.
+  if (riskyness <= 0.4) return 'take';
 
   // If the card is an absolutely massive benefit (e.g. bridging a gap where cost is -21), NEVER risk passing it.
   if (perceivedCost <= -10) return 'take';
